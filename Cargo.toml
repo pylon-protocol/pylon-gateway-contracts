@@ -1,0 +1,16 @@
+[workspace]
+members = [
+    "packages/*",
+    "contracts/factory",
+    "contracts/pool",
+    "contracts/strategies/cap-fixed",
+    "contracts/strategies/cap-min",
+    "contracts/strategies/cap-staged",
+    "contracts/swap"
+]
+
+[profile.release]
+rpath = false
+lto = true
+overflow-checks = true
+
