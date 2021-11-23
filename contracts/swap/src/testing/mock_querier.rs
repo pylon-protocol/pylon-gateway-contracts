@@ -4,9 +4,10 @@ use cosmwasm_std::{
     from_binary, from_slice, to_binary, Api, Coin, ContractResult, OwnedDeps, Querier,
     QuerierResult, QueryRequest, SystemError, SystemResult, WasmQuery,
 };
-use pylon_utils::mock_tax::MockTax;
-use pylon_utils::mock_token::MockToken;
 use terra_cosmwasm::{TaxCapResponse, TaxRateResponse, TerraQuery, TerraQueryWrapper, TerraRoute};
+
+use crate::testing::mock_tax::MockTax;
+use crate::testing::mock_token::MockToken;
 
 pub fn mock_dependencies(
     contract_balance: &[Coin],
