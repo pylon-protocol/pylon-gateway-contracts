@@ -6,15 +6,10 @@ use pylon_gateway::cap_strategy_resp;
 use std::ops::{Add, Sub};
 
 use crate::error::ContractError;
-use crate::handler::util_staking;
+use crate::handler::{util_staking, ExecuteResult};
 use crate::state::{config, reward, user};
 
-pub fn update(
-    deps: DepsMut,
-    env: Env,
-    info: MessageInfo,
-    target: Option<String>,
-) -> Result<Response, ContractError> {
+pub fn update(deps: DepsMut, env: Env, info: MessageInfo, target: Option<String>) -> ExecuteResult {
     let config = config::read(deps.storage).unwrap().distribution_config;
     let applicable_reward_time = config.applicable_reward_time(env.block.time.seconds());
 
@@ -60,7 +55,7 @@ pub fn deposit_internal(
     info: MessageInfo,
     sender: String,
     amount: Uint256,
-) -> Result<Response, ContractError> {
+) -> ExecuteResult {
     if env.contract.address.ne(&info.sender) {
         return Err(ContractError::Unauthorized {
             action: "deposit_internal".to_string(),
@@ -136,7 +131,7 @@ pub fn withdraw_internal(
     info: MessageInfo,
     sender: String,
     amount: Uint256,
-) -> Result<Response, ContractError> {
+) -> ExecuteResult {
     if env.contract.address.ne(&info.sender) {
         return Err(ContractError::Unauthorized {
             action: "withdraw_internal".to_string(),
@@ -178,12 +173,7 @@ pub fn withdraw_internal(
         .add_attribute("withdraw_amount", amount.to_string()))
 }
 
-pub fn claim_internal(
-    deps: DepsMut,
-    env: Env,
-    info: MessageInfo,
-    sender: String,
-) -> Result<Response, ContractError> {
+pub fn claim_internal(deps: DepsMut, env: Env, info: MessageInfo, sender: String) -> ExecuteResult {
     if env.contract.address.ne(&info.sender) {
         return Err(ContractError::Unauthorized {
             action: "claim_internal".to_string(),
@@ -218,4 +208,39 @@ pub fn claim_internal(
         .add_attribute("action", "claim")
         .add_attribute("sender", info.sender.to_string())
         .add_attribute("claim_amount", claim_amount.to_string()))
+}
+
+pub fn transfer_internal(
+    deps: DepsMut,
+    _env: Env,
+    info: MessageInfo,
+    owner: String,
+    recipient: String,
+    amount: Uint256,
+) -> ExecuteResult {
+    let config = config::read(deps.storage)?;
+    if config.token != info.sender {
+        return Err(ContractError::Unauthorized {
+            action: "transfer_internal".to_string(),
+            expected: config.token,
+            actual: info.sender.to_string(),
+        });
+    }
+
+    let owner_addr = deps.api.addr_canonicalize(owner.as_str())?;
+    let mut owner = user::read(deps.storage, &owner_addr)?;
+    if owner.amount < amount {
+        return Err(ContractError::TransferAmountExceeded { amount });
+    }
+
+    let recipient_addr = deps.api.addr_canonicalize(recipient.as_str())?;
+    let mut recipient = user::read(deps.storage, &recipient_addr)?;
+
+    owner.amount = owner.amount - amount;
+    recipient.amount += amount;
+
+    user::store(deps.storage, &owner_addr, &owner)?;
+    user::store(deps.storage, &recipient_addr, &recipient)?;
+
+    Ok(Response::new().add_attributes(vec![attr("action", "transfer_internal"), attr("", "")]))
 }

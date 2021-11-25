@@ -65,6 +65,7 @@ impl DistributionConfig {
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
 pub struct Config {
     pub owner: String,
+    pub token: String,
     // share
     pub share_token: String,
     pub deposit_config: DepositConfig,

@@ -4,6 +4,7 @@ pub mod state;
 
 mod error;
 mod handler;
+mod response;
 
 #[cfg(test)]
 mod testing;

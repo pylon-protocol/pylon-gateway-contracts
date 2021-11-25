@@ -19,6 +19,9 @@ pub enum ContractError {
         actual: String,
     },
 
+    #[error("Gateway/Pool: Invalid reply ID (ID: {id:?}")]
+    InvalidReplyId { id: u64 },
+
     #[error("Gateway/Pool: unsupported receive message. (type: {typ:?})")]
     UnsupportedReceiveMsg { typ: String },
 
@@ -30,6 +33,9 @@ pub enum ContractError {
 
     #[error("Gateway/Pool: withdraw amount exceeds balance. (balance: {amount:?})")]
     WithdrawAmountExceeded { amount: Uint256 },
+
+    #[error("Gateway/Pool: transfer amount exceeds balance. (balance: {amount:?})")]
+    TransferAmountExceeded { amount: Uint256 },
 
     #[error("Gateway/Pool: sale finished. (now: {now:?}, finished: {finished:?})")]
     SaleFinished { now: u64, finished: u64 },

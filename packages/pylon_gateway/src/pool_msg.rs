@@ -1,4 +1,5 @@
 use cosmwasm_bignumber::Uint256;
+use cosmwasm_std::Uint128;
 use cw20::Cw20ReceiveMsg;
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
@@ -12,6 +13,7 @@ pub struct InstantiateMsg {
     pub reward_token: String,
     pub reward_amount: Uint256,
     pub cap_strategy: Option<String>,
+    pub pool_token_code_id: u64,
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
@@ -48,13 +50,32 @@ pub enum ConfigureMsg {
 pub enum ExecuteMsg {
     // core
     Receive(Cw20ReceiveMsg),
-    Update { target: Option<String> },
-    Withdraw { amount: Uint256 },
-    Claim {},
+    Update {
+        target: Option<String>,
+    },
+    Withdraw {
+        amount: Uint256,
+    },
+    Claim {
+        target: Option<String>,
+    },
     // internal
-    DepositInternal { sender: String, amount: Uint256 },
-    WithdrawInternal { sender: String, amount: Uint256 },
-    ClaimInternal { sender: String },
+    TransferInternal {
+        owner: String,
+        recipient: String,
+        amount: Uint128,
+    },
+    DepositInternal {
+        sender: String,
+        amount: Uint256,
+    },
+    WithdrawInternal {
+        sender: String,
+        amount: Uint256,
+    },
+    ClaimInternal {
+        sender: String,
+    },
     // owner
     Configure(ConfigureMsg),
 }

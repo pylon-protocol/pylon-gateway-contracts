@@ -17,13 +17,14 @@ fn proper_initialization() {
     let env = mock_env();
     let info = mock_info(TEST_OWNER, &[]);
     let res = contract::instantiate(deps.as_mut(), env, info.clone(), msg.clone()).unwrap();
-    assert_eq!(res, Response::default());
+    assert_eq!(res.messages.len(), 1);
 
     let config = config::read(deps.as_ref().storage).unwrap();
     assert_eq!(
         config,
         config::Config {
             owner: info.sender.to_string(),
+            token: "".to_string(),
             // share
             share_token: msg.share_token,
             deposit_config: config::DepositConfig {

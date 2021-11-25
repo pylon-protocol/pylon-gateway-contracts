@@ -19,6 +19,7 @@ pub fn init_msg() -> InstantiateMsg {
         share_token: TEST_SHARE_TOKEN.to_string(),
         reward_token: TEST_REWARD_TOKEN.to_string(),
         cap_strategy: Option::None,
+        pool_token_code_id: 0,
     }
 }
 

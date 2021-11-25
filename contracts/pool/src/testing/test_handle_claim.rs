@@ -15,7 +15,7 @@ fn handle_claim() {
     let _ = utils::initialize(&mut deps);
     let user = mock_info(TEST_USER, &[]);
 
-    let msg = ExecuteMsg::Claim {};
+    let msg = ExecuteMsg::Claim { target: None };
     let res = contract::execute(deps.as_mut(), mock_env(), user.clone(), msg)
         .expect("testing: handle claim message");
     assert_eq!(
