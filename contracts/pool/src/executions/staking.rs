@@ -1,6 +1,6 @@
 use cosmwasm_std::{
-    attr, to_binary, CosmosMsg, Decimal, DepsMut, Env, MessageInfo, Response, StdError, StdResult,
-    Uint128, WasmMsg,
+    attr, to_binary, Addr, CosmosMsg, Decimal, DepsMut, Env, MessageInfo, Response, StdError,
+    StdResult, Uint128, WasmMsg,
 };
 use cw20::Cw20ExecuteMsg;
 use std::cmp::{max, min};
@@ -189,6 +189,14 @@ pub fn transfer(
     amount: Uint128,
 ) -> super::ExecuteResult {
     let config = Config::load(deps.storage)?;
+    if config.token == Addr::unchecked("".to_string()) {
+        return Err(ContractError::Unauthorized {
+            action: "transfer_internal".to_string(),
+            expected: "<not assigned>".to_string(),
+            actual: info.sender.to_string(),
+        });
+    }
+
     if config.token != info.sender {
         return Err(ContractError::Unauthorized {
             action: "transfer_internal".to_string(),

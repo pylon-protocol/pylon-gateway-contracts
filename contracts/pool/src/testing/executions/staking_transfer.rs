@@ -5,7 +5,9 @@ use crate::error::ContractError;
 use crate::executions::staking::transfer;
 use crate::executions::ExecuteResult;
 use crate::states::user::User;
-use crate::testing::{instantiate, mock_deps, MockDeps, TEST_STAKER_1, TEST_STAKER_2};
+use crate::testing::{
+    instantiate, mock_deps, reply, MockDeps, TEST_STAKER_1, TEST_STAKER_2, TEST_TOKEN,
+};
 
 pub fn exec(
     deps: &mut MockDeps,
@@ -29,12 +31,14 @@ pub fn exec(
 fn success() {
     let mut deps = mock_deps();
     instantiate::default(&mut deps);
+    reply::default(&mut deps);
+
     super::staking_deposit::default(&mut deps, TEST_STAKER_1, 10000u128);
 
     let res = exec(
         &mut deps,
         mock_env(),
-        mock_info("", &[]),
+        mock_info(TEST_TOKEN, &[]),
         TEST_STAKER_1,
         TEST_STAKER_2,
         5000u128,
@@ -71,11 +75,12 @@ fn success() {
 fn fail_transfer_amount_exceeded() {
     let mut deps = mock_deps();
     instantiate::default(&mut deps);
+    reply::default(&mut deps);
 
     match exec(
         &mut deps,
         mock_env(),
-        mock_info("", &[]),
+        mock_info(TEST_TOKEN, &[]),
         TEST_STAKER_1,
         TEST_STAKER_2,
         100u128,

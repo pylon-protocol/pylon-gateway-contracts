@@ -237,12 +237,12 @@ pub fn query(deps: Deps, env: Env, msg: QueryMsg) -> queries::QueryResult {
 
 #[allow(dead_code)]
 #[cfg_attr(not(feature = "library"), entry_point)]
-pub fn migrate(deps: DepsMut, env: Env, msg: MigrateMsg) -> executions::ExecuteResult {
+pub fn migrate(deps: DepsMut, env: Env, _msg: MigrateMsg) -> executions::ExecuteResult {
     match get_contract_version(deps.storage) {
         Ok(ContractVersion { contract, version }) => match format!("{}:{}", contract, version) {
             // format!("{}:v0.1.1", CONTRACT_NAME) => Ok(Response::new()), // TODO: do it next time
             _ => Err(ContractError::InvalidContractVersionForMigration {}),
         },
-        Err(_) => migrations::legacy::migrate(deps, env, msg),
+        Err(_) => migrations::legacy::migrate(deps, env),
     }
 }

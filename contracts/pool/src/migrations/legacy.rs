@@ -1,7 +1,6 @@
 use cosmwasm_bignumber::{Decimal256, Uint256};
 use cosmwasm_std::{Addr, Decimal, DepsMut, Env, Response, Uint128};
 use cosmwasm_storage::ReadonlySingleton;
-use pylon_gateway::pool_msg::MigrateMsg;
 use pylon_gateway::time_range::TimeRange;
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
@@ -45,7 +44,14 @@ pub struct LegacyReward {
     pub reward_per_token_stored: Decimal256,
 }
 
-pub fn migrate(deps: DepsMut, _env: Env, _msg: MigrateMsg) -> super::MigrateResult {
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
+pub struct LegacyUser {
+    pub amount: Uint256,
+    pub reward: Uint256,
+    pub reward_per_token_paid: Decimal256,
+}
+
+pub fn migrate(deps: DepsMut, _env: Env) -> super::MigrateResult {
     let api = deps.api;
 
     let legacy_config = ReadonlySingleton::<LegacyConfig>::new(deps.storage, KEY_CONFIG).load()?;
