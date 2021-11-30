@@ -4,6 +4,7 @@ use cosmwasm_std::entry_point;
 use cosmwasm_std::{
     to_binary, Binary, Deps, DepsMut, Env, MessageInfo, Response, StdResult, Uint128,
 };
+use cw2::set_contract_version;
 use cw20::{
     AllAccountsResponse, BalanceResponse, Cw20ExecuteMsg, Cw20QueryMsg, DownloadLogoResponse,
     MarketingInfoResponse, MinterResponse, TokenInfoResponse,
@@ -16,6 +17,7 @@ use cw20_base::state::{TokenInfo, TOKEN_INFO};
 use cw20_base::ContractError;
 use pylon_gateway::pool_token_msg::{InstantiateMsg, MigrateMsg};
 
+use crate::constants::{CONTRACT_NAME, CONTRACT_VERSION};
 use crate::executions;
 use crate::querier::Querier;
 use crate::states::Config;
@@ -28,6 +30,8 @@ pub fn instantiate(
     _info: MessageInfo,
     msg: InstantiateMsg,
 ) -> Result<Response, ContractError> {
+    set_contract_version(deps.storage, CONTRACT_NAME, CONTRACT_VERSION)?;
+
     let querier = Querier::new(&deps.querier);
 
     let pool_addr = deps.api.addr_validate(msg.pool.as_str())?;
@@ -36,7 +40,8 @@ pub fn instantiate(
     let reward_token_info =
         querier.load_token_info(&deps.api.addr_validate(pool_config.reward_token.as_str())?)?;
 
-    let months = (pool_config.finish_time - pool_config.start_time) / (30 * 86400);
+    let (distribution_start, distribution_finish) = pool_config.reward_distribution_time;
+    let months = (distribution_finish - distribution_start) / (30 * 86400);
 
     TOKEN_INFO.save(
         deps.storage,
@@ -112,17 +117,19 @@ pub fn query(deps: Deps, _env: Env, msg: Cw20QueryMsg) -> StdResult<Binary> {
     match msg {
         Cw20QueryMsg::Balance { address } => {
             let config = Config::load(deps.storage)?;
-            let balance = querier
-                .load_pool_balance(&config.pool, &deps.api.addr_validate(address.as_str())?)?;
+            let staker = querier
+                .load_pool_staker(&config.pool, &deps.api.addr_validate(address.as_str())?)?;
 
-            to_binary(&BalanceResponse { balance })
+            to_binary(&BalanceResponse {
+                balance: staker.staked,
+            })
         }
         Cw20QueryMsg::TokenInfo {} => {
             let config = Config::load(deps.storage)?;
             let pool_reward = querier.load_pool_reward(&config.pool)?;
 
             let mut token_info = TOKEN_INFO.load(deps.storage)?;
-            token_info.total_supply = Uint128::from(pool_reward.total_deposit);
+            token_info.total_supply = pool_reward.total_deposit;
 
             to_binary(&TokenInfoResponse {
                 name: token_info.name,
@@ -146,7 +153,7 @@ pub fn query(deps: Deps, _env: Env, msg: Cw20QueryMsg) -> StdResult<Binary> {
         )?)?),
         Cw20QueryMsg::AllAccounts { start_after, limit } => {
             let config = Config::load(deps.storage)?;
-            let pool_stakers = querier.load_pool_stakers(&config.pool, start_after, limit)?;
+            let pool_stakers = querier.load_pool_stakers(&config.pool, start_after, limit, None)?;
 
             to_binary(&AllAccountsResponse {
                 accounts: pool_stakers

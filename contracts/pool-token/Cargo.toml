@@ -1,8 +1,13 @@
 [package]
-name = "gateway-pool-token"
-version = "0.1.0"
+name = "pylon-gateway-pool-token"
+version = "0.1.1"
 authors = ["carter <carter@pylon.money>"]
 edition = "2018"
+description = "Pylon Gateway's pool derivate token contract"
+license = "Apache-2.0"
+repository = "https://github.com/pylon-protocol/pylon-gateway-contracts"
+homepage = "https://pylon.money"
+documentation = "https://docs.pylon.money"
 
 exclude = [
   # Those files are rust-optimizer artifacts. You might want to commit them for convenience but they should not be part of the source code publication.
@@ -34,6 +39,7 @@ overflow-checks = true
 backtraces = ["cosmwasm-std/backtraces"]
 
 [dependencies]
+cw2 = { version = "0.9.1" }
 cw20 = { version = "0.9.1" }
 cw20-base = { version = "0.9.1", features = ["library"] }
 terraswap = "2.4.0"
