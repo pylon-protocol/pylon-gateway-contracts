@@ -240,7 +240,7 @@ pub fn query(deps: Deps, env: Env, msg: QueryMsg) -> queries::QueryResult {
 pub fn migrate(deps: DepsMut, env: Env, _msg: MigrateMsg) -> executions::ExecuteResult {
     match get_contract_version(deps.storage) {
         Ok(ContractVersion { contract, version }) => match format!("{}:{}", contract, version) {
-            // format!("{}:v0.1.1", CONTRACT_NAME) => Ok(Response::new()), // TODO: do it next time
+            format!("{}:v0.1.1", CONTRACT_NAME) => Ok(Response::new()), // TODO: do it next time
             _ => Err(ContractError::InvalidContractVersionForMigration {}),
         },
         Err(_) => migrations::legacy::migrate(deps, env),
