@@ -9,4 +9,3 @@ pub mod pool_token_msg;
 pub mod swap_msg;
 pub mod swap_resp;
 pub mod time_range;
-pub mod validator;
