@@ -11,7 +11,7 @@ use pylon_gateway::pool_msg::{ConfigureMsg, ExecuteMsg, InstantiateMsg, MigrateM
 use pylon_gateway::pool_token_msg::InstantiateMsg as PoolTokenInitMsg;
 use pylon_gateway::time_range::TimeRange;
 
-use crate::constant::{CONTRACT_NAME, CONTRACT_VERSION, INSTANTIATE_REPLY_ID};
+use crate::constants::{CONTRACT_NAME, CONTRACT_VERSION, INSTANTIATE_REPLY_ID};
 use crate::error::ContractError;
 use crate::response::MsgInstantiateContractResponse;
 use crate::states::config::Config;

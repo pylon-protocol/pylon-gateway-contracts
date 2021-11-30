@@ -5,7 +5,7 @@ pub mod migrations;
 pub mod queries;
 pub mod states;
 
-mod constant;
+mod constants;
 mod error;
 mod response;
 

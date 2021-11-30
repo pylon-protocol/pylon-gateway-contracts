@@ -7,7 +7,7 @@ use pylon_gateway::pool_msg::InstantiateMsg;
 use pylon_gateway::pool_token_msg::InstantiateMsg as PoolInitMsg;
 use pylon_gateway::time_range::TimeRange;
 
-use crate::constant::INSTANTIATE_REPLY_ID;
+use crate::constants::INSTANTIATE_REPLY_ID;
 use crate::entrypoints::instantiate;
 use crate::executions::ExecuteResult;
 use crate::states::config::Config;

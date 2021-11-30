@@ -5,7 +5,7 @@ use pylon_utils::range::{calc_range_end_addr, calc_range_start_addr};
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 
-use crate::constant::{DEFAULT_QUERY_LIMIT, MAX_QUERY_LIMIT};
+use crate::constants::{DEFAULT_QUERY_LIMIT, MAX_QUERY_LIMIT};
 
 #[derive(Serialize, Deserialize, Default, Clone, Debug, PartialEq, JsonSchema)]
 pub struct User {
