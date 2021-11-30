@@ -239,10 +239,20 @@ pub fn query(deps: Deps, env: Env, msg: QueryMsg) -> queries::QueryResult {
 #[cfg_attr(not(feature = "library"), entry_point)]
 pub fn migrate(deps: DepsMut, env: Env, _msg: MigrateMsg) -> executions::ExecuteResult {
     match get_contract_version(deps.storage) {
-        Ok(ContractVersion { contract, version }) => match format!("{}:{}", contract, version) {
-            format!("{}:v0.1.1", CONTRACT_NAME) => Ok(Response::new()), // TODO: do it next time
-            _ => Err(ContractError::InvalidContractVersionForMigration {}),
-        },
+        Ok(ContractVersion { contract, version }) => {
+            if contract != CONTRACT_NAME {
+                return Err(ContractError::Unauthorized {
+                    action: "migrate".to_string(),
+                    expected: CONTRACT_NAME.to_string(),
+                    actual: contract,
+                });
+            }
+
+            match version.as_str() {
+                "v0.1.1" => Ok(Response::new()), // TODO: do it next time
+                _ => Err(ContractError::InvalidContractVersionForMigration {}),
+            }
+        }
         Err(_) => migrations::legacy::migrate(deps, env),
     }
 }
