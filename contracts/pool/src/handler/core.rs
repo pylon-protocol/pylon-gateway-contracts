@@ -210,7 +210,7 @@ pub fn claim_internal(
             contract_addr: config.reward_token,
             msg: to_binary(&Cw20ExecuteMsg::Transfer {
                 recipient: sender,
-                amount: Uin128::from(claim_amount) * Uint128::from(100u128), // TODO: adapt denom
+                amount: Uint128::from(claim_amount) * Uint128::from(100u128), // TODO: adapt denom
             })
             .unwrap(),
             funds: vec![],
