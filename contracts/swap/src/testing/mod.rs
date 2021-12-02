@@ -1,7 +1,9 @@
 mod constants;
+mod executions;
 mod mock_querier;
 mod mock_tax;
 mod mock_token;
+mod queries;
 mod test_execute_claim;
 mod test_execute_deposit;
 mod test_execute_earn;

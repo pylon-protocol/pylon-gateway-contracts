@@ -1,4 +1,4 @@
-use cosmwasm_bignumber::{Decimal256, Uint256};
+use cosmwasm_std::{Decimal, Uint128};
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 
@@ -8,13 +8,19 @@ pub struct ConfigResponse {
     pub beneficiary: String,
     pub start: u64,
     pub finish: u64,
-    pub price: Decimal256,
-    pub total_sale_amount: Uint256,
+    pub price: Decimal,
+    pub total_sale_amount: Uint128,
+}
+
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
+pub struct StateResponse {
+    pub total_swpaped: Uint128,
+    pub total_claimed: Uint128,
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
 pub struct BalanceOfResponse {
-    pub amount: Uint256,
+    pub amount: Uint128,
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
@@ -24,29 +30,29 @@ pub struct IsWhitelistedResponse {
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
 pub struct AvailableCapOfResponse {
-    pub amount: Option<Uint256>,
+    pub amount: Option<Uint128>,
     pub unlimited: bool,
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
 pub struct ClaimableTokenOfResponse {
-    pub amount: Uint256,
-    pub remaining: Uint256,
+    pub amount: Uint128,
+    pub remaining: Uint128,
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
 pub struct TotalSupplyResponse {
-    pub amount: Uint256,
+    pub amount: Uint128,
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
 pub struct CurrentPriceResponse {
-    pub price: Decimal256,
+    pub price: Decimal,
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
 pub struct SimulateWithdrawResponse {
-    pub amount: Uint256,
-    pub penalty: Uint256,
+    pub amount: Uint128,
+    pub penalty: Uint128,
     pub withdrawable: bool,
 }

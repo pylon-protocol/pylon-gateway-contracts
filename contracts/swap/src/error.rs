@@ -1,5 +1,4 @@
-use cosmwasm_bignumber::Uint256;
-use cosmwasm_std::{OverflowError, StdError};
+use cosmwasm_std::{OverflowError, StdError, Uint128};
 use thiserror::Error;
 
 #[derive(Error, Debug, PartialEq)]
@@ -26,13 +25,13 @@ pub enum ContractError {
     SwapFinished { finish: u64 },
 
     #[error("Gateway/Swap: withdraw amount exceeds deposit amount (Available: {available:?})")]
-    WithdrawAmountExceeded { available: Uint256 },
+    WithdrawAmountExceeded { available: Uint128 },
 
     #[error("Gateway/Swap: deposit amount exceeds available cap (Available: {available:?})")]
-    AvailableCapExceeded { available: Uint256 },
+    AvailableCapExceeded { available: Uint128 },
 
     #[error("Gateway/Swap: deposit amount exceeds pool size (Available: {available:?})")]
-    PoolSizeExceeded { available: Uint256 },
+    PoolSizeExceeded { available: Uint128 },
 
     #[error("Gateway/Swap: Invalid reply ID (ID: {id:?}")]
     InvalidReplyId { id: u64 },
