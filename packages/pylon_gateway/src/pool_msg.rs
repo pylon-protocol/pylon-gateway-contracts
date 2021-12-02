@@ -88,4 +88,6 @@ pub enum QueryMsg {
 /// We currently take no arguments for migrations
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
 #[serde(rename_all = "snake_case")]
-pub enum MigrateMsg {}
+pub enum MigrateMsg {
+    General {},
+}
