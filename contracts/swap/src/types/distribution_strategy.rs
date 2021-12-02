@@ -1,4 +1,5 @@
 use cosmwasm_std::{Decimal, Uint128};
+use pylon_gateway::swap_msg::DistributionStrategy as SwapDistributionStrategy;
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 
@@ -18,6 +19,29 @@ pub enum DistributionStrategy {
         release_finish_time: u64,
         release_amount: Decimal,
     },
+}
+
+impl From<SwapDistributionStrategy> for DistributionStrategy {
+    fn from(strategy: SwapDistributionStrategy) -> Self {
+        match strategy {
+            DistributionStrategy::Lockup {
+                release_time,
+                release_amount,
+            } => Self::Lockup {
+                release_time,
+                release_amount,
+            },
+            DistributionStrategy::Vesting {
+                release_start_time,
+                release_finish_time,
+                release_amount,
+            } => Self::Vesting {
+                release_start_time,
+                release_finish_time,
+                release_amount,
+            },
+        }
+    }
 }
 
 impl DistributionStrategy {

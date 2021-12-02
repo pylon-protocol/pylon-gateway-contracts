@@ -1,4 +1,5 @@
 use cosmwasm_std::{Decimal, QuerierWrapper, StdResult, Uint128};
+use pylon_gateway::swap_msg::CapStrategy as SwapCapStrategy;
 use pylon_token::gov_msg::QueryMsg as GovQueryMsg;
 use pylon_token::gov_resp::StakerResponse as GovStakerResponse;
 use schemars::JsonSchema;
@@ -47,6 +48,48 @@ pub enum CapStrategy {
         // 4. cap_weight
         stages: Vec<(Option<Uint128>, Option<Uint128>, Uint128, Decimal)>,
     },
+}
+
+impl From<SwapCapStrategy> for CapStrategy {
+    fn from(strategy: SwapCapStrategy) -> Self {
+        match strategy {
+            SwapCapStrategy::Fixed {
+                min_user_cap,
+                max_user_cap,
+            } => Self::Fixed {
+                min_user_cap,
+                max_user_cap,
+            },
+            SwapCapStrategy::GovFixed {
+                contract,
+                min_stake_amount,
+                min_user_cap,
+                max_user_cap,
+            } => Self::GovFixed {
+                contract,
+                min_stake_amount,
+                min_user_cap,
+                max_user_cap,
+            },
+            SwapCapStrategy::GovLinear {
+                contract,
+                cap_start,
+                cap_weight,
+                min_stake_amount,
+                max_stake_amount,
+            } => Self::GovLinear {
+                contract,
+                cap_start,
+                cap_weight,
+                min_stake_amount,
+                max_stake_amount,
+            },
+            SwapCapStrategy::GovStaged { contract, stages } => Self::GovStaged { contract, stages },
+            SwapCapStrategy::GovLinearStaged { contract, stages } => {
+                Self::GovLinearStaged { contract, stages }
+            }
+        }
+    }
 }
 
 impl CapStrategy {

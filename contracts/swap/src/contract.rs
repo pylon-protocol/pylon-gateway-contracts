@@ -1,16 +1,17 @@
 #[cfg(not(feature = "library"))]
 use cosmwasm_std::entry_point;
 
-use cosmwasm_bignumber::Uint256;
-use cosmwasm_std::{Binary, Deps, DepsMut, Env, MessageInfo, Response, StdResult};
+use cosmwasm_std::{Binary, Deps, DepsMut, Env, MessageInfo, Response, StdResult, Uint128};
+use cw2::set_contract_version;
+use cw20::Denom;
 use pylon_gateway::swap_msg::{ConfigureMsg, ExecuteMsg, InstantiateMsg, MigrateMsg, QueryMsg};
 
+use crate::constants::{CONTRACT_NAME, CONTRACT_VERSION};
 use crate::error::ContractError;
-use crate::handler::configure as ConfigHandler;
-use crate::handler::execute as ExecHandler;
-use crate::handler::migrate as MigrateHandler;
-use crate::handler::query as QueryHandler;
-use crate::state::{config, state};
+use crate::states::config::Config;
+use crate::states::state::State;
+use crate::types::cap_strategy::CapStrategy;
+use crate::types::distribution_strategy::DistributionStrategy;
 
 #[allow(dead_code)]
 #[cfg_attr(not(feature = "library"), entry_point)]
@@ -20,26 +21,39 @@ pub fn instantiate(
     info: MessageInfo,
     msg: InstantiateMsg,
 ) -> Result<Response, ContractError> {
-    config::store(deps.storage).save(&config::Config {
-        owner: info.sender.to_string(),
-        beneficiary: msg.beneficiary,
-        price: msg.price,
-        start: msg.start,
-        finish: msg.start + msg.period,
-        cap_strategy: msg.cap_strategy,
-        distribution_strategy: msg.distribution_strategy,
-        whitelist_enabled: msg.whitelist_enabled,
-        swap_pool_size: msg.swap_pool_size,
-    })?;
+    set_contract_version(deps.storage, CONTRACT_NAME, CONTRACT_VERSION)?;
 
-    state::store(deps.storage).save(&state::State {
-        total_swapped: Uint256::zero(),
-        total_claimed: Uint256::zero(),
-        x_denom: msg.pool_x_denom,
-        y_addr: msg.pool_y_addr,
-        liq_x: msg.pool_liq_x,
-        liq_y: msg.pool_liq_y,
-    })?;
+    let api = deps.api;
+    Config::save(
+        deps.storage,
+        &Config {
+            owner: info.sender,
+            beneficiary: api.addr_validate(msg.beneficiary.as_str())?,
+            start: msg.start,
+            finish: msg.start + msg.period,
+            price: msg.price,
+            amount: msg.swap_pool_size,
+            input_token: Denom::Native(msg.pool_x_denom),
+            output_token: Denom::Cw20(api.addr_validate(msg.pool_y_addr.as_str())?),
+            deposit_cap_strategy: msg.deposit_cap_strategy.map(CapStrategy::from),
+            distribution_strategies: msg
+                .distribution_strategies
+                .iter()
+                .map(DistributionStrategy::from)
+                .collect(),
+            whitelist_enabled: msg.whitelist_enabled,
+        },
+    )?;
+
+    State::save(
+        deps.storage,
+        &State {
+            total_swapped: Uint128::zero(),
+            total_claimed: Uint128::zero(),
+            x_liquidity: msg.x_liquidity,
+            y_liquidity: msg.y_liquidity,
+        },
+    )?;
 
     Ok(Response::default())
 }
@@ -118,9 +132,6 @@ pub fn query(deps: Deps, env: Env, msg: QueryMsg) -> StdResult<Binary> {
 
 #[allow(dead_code)]
 #[cfg_attr(not(feature = "library"), entry_point)]
-pub fn migrate(deps: DepsMut, env: Env, msg: MigrateMsg) -> Result<Response, ContractError> {
-    match msg {
-        MigrateMsg::Refund {} => MigrateHandler::refund(deps, env),
-        MigrateMsg::General {} => Ok(Response::default()),
-    }
+pub fn migrate(_deps: DepsMut, _env: Env, _msg: MigrateMsg) -> Result<Response, ContractError> {
+    Ok(Response::default())
 }

@@ -7,7 +7,7 @@ pub fn query_state(deps: Deps, env: Env) -> super::QueryResult {
     let state = State::load(deps.storage)?;
 
     Ok(to_binary(&StateResponse {
-        total_swpaped: state.total_swapped,
+        total_swapped: state.total_swapped,
         total_claimed: state.total_claimed,
     })?)
 }
