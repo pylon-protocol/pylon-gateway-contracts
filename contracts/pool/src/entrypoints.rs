@@ -34,7 +34,7 @@ pub fn instantiate(
     Config::save(
         deps.storage,
         &Config {
-            owner: info.sender,
+            owner: info.sender.clone(),
             token: Addr::unchecked("".to_string()),
             share_token: api.addr_validate(msg.share_token.as_str())?,
             deposit_time: msg
@@ -73,7 +73,7 @@ pub fn instantiate(
     Ok(Response::new().add_submessage(SubMsg {
         // Create DP token
         msg: WasmMsg::Instantiate {
-            admin: None,
+            admin: Some(info.sender.to_string()),
             code_id: msg.pool_token_code_id,
             funds: vec![],
             label: "".to_string(),
@@ -145,11 +145,11 @@ pub fn execute(
         } => executions::staking::transfer(deps, env, info, owner, recipient, amount),
         // owner
         ExecuteMsg::Configure(msg) => {
-            let owner = Config::load(deps.storage)?.owner;
-            if owner != info.sender {
+            let config = Config::load(deps.storage)?;
+            if config.owner != info.sender {
                 return Err(ContractError::Unauthorized {
                     action: "configure".to_string(),
-                    expected: owner.to_string(),
+                    expected: config.owner.to_string(),
                     actual: info.sender.to_string(),
                 });
             }
@@ -250,7 +250,7 @@ pub fn query(deps: Deps, env: Env, msg: QueryMsg) -> queries::QueryResult {
 
 #[allow(dead_code)]
 #[cfg_attr(not(feature = "library"), entry_point)]
-pub fn migrate(deps: DepsMut, env: Env, _msg: MigrateMsg) -> executions::ExecuteResult {
+pub fn migrate(deps: DepsMut, env: Env, _msg: MigrateMsg) -> migrations::MigrateResult {
     match get_contract_version(deps.storage) {
         Ok(ContractVersion { contract, version }) => {
             if contract != CONTRACT_NAME {

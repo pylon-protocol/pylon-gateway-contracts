@@ -56,7 +56,7 @@ fn success() {
         resp.messages,
         vec![SubMsg {
             msg: CosmosMsg::Wasm(WasmMsg::Instantiate {
-                admin: None,
+                admin: Some(info.sender.to_string()),
                 code_id: 1234,
                 msg: to_binary(&PoolInitMsg {
                     pool: env.contract.address.to_string()
