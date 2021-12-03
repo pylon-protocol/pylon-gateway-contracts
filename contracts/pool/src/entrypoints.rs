@@ -224,7 +224,20 @@ pub fn reply(deps: DepsMut, _env: Env, msg: Reply) -> executions::ExecuteResult 
 #[cfg_attr(not(feature = "library"), entry_point)]
 pub fn query(deps: Deps, env: Env, msg: QueryMsg) -> queries::QueryResult {
     match msg {
+        // v1
         QueryMsg::Config {} => queries::config::query_config(deps, env),
+        QueryMsg::BalanceOf { owner } => queries::user::query_balance(deps, env, owner),
+        QueryMsg::ClaimableReward { owner, timestamp } => {
+            queries::user::query_claimable_reward(deps, env, owner, timestamp)
+        }
+        QueryMsg::AvailableCapOf { address } => {
+            queries::user::query_available_cap(deps, env, address)
+        }
+
+        // v2
+        QueryMsg::ConfigV2 {} => queries::config::query_config_v2(deps, env),
+
+        // common
         QueryMsg::Reward {} => queries::reward::query_reward(deps, env),
         QueryMsg::Staker { address } => queries::user::query_staker(deps, env, address),
         QueryMsg::Stakers {

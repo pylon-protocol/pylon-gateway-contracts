@@ -83,8 +83,24 @@ pub enum Cw20HookMsg {
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
 #[serde(rename_all = "snake_case")]
 pub enum QueryMsg {
-    Config {}, // state::Config
-    Reward {}, // state::Reward
+    // v1
+    Config {},
+    BalanceOf {
+        owner: String,
+    },
+    ClaimableReward {
+        owner: String,
+        timestamp: Option<u64>,
+    },
+    AvailableCapOf {
+        address: String,
+    },
+
+    // v2
+    ConfigV2 {},
+
+    // common
+    Reward {},
     Staker {
         address: String,
     },

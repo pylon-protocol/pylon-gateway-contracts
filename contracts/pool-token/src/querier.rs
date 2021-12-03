@@ -1,10 +1,8 @@
 use cosmwasm_std::{Addr, QuerierWrapper, StdResult};
 use cw20::{Cw20QueryMsg, TokenInfoResponse};
-use pylon_gateway::pool_msg::QueryMsg as PoolQueryMsg;
-use pylon_gateway::pool_resp::{
-    ConfigResponse as PoolConfigResponse, RewardResponse as PoolRewardResponse,
-    StakerResponse as PoolStakerResponse, StakersResponse as PoolStakersResponse,
-};
+use pylon_gateway::pool_msg;
+use pylon_gateway::pool_resp;
+use pylon_gateway::pool_resp_v2;
 use pylon_utils::common::OrderBy;
 
 pub struct Querier<'a> {
@@ -16,26 +14,30 @@ impl Querier<'_> {
         Querier { querier }
     }
 
-    pub fn load_pool_config(&self, pool: &Addr) -> StdResult<PoolConfigResponse> {
-        let pool_config: PoolConfigResponse = self
+    pub fn load_pool_config(&self, pool: &Addr) -> StdResult<pool_resp_v2::ConfigResponse> {
+        let pool_config: pool_resp_v2::ConfigResponse = self
             .querier
-            .query_wasm_smart(pool, &PoolQueryMsg::Config {})?;
+            .query_wasm_smart(pool, &pool_msg::QueryMsg::ConfigV2 {})?;
 
         Ok(pool_config)
     }
 
-    pub fn load_pool_reward(&self, pool: &Addr) -> StdResult<PoolRewardResponse> {
-        let pool_reward: PoolRewardResponse = self
+    pub fn load_pool_reward(&self, pool: &Addr) -> StdResult<pool_resp::RewardResponse> {
+        let pool_reward: pool_resp::RewardResponse = self
             .querier
-            .query_wasm_smart(pool, &PoolQueryMsg::Reward {})?;
+            .query_wasm_smart(pool, &pool_msg::QueryMsg::Reward {})?;
 
         Ok(pool_reward)
     }
 
-    pub fn load_pool_staker(&self, pool: &Addr, owner: &Addr) -> StdResult<PoolStakerResponse> {
-        let pool_staker: PoolStakerResponse = self.querier.query_wasm_smart(
+    pub fn load_pool_staker(
+        &self,
+        pool: &Addr,
+        owner: &Addr,
+    ) -> StdResult<pool_resp::StakerResponse> {
+        let pool_staker: pool_resp::StakerResponse = self.querier.query_wasm_smart(
             pool,
-            &PoolQueryMsg::Staker {
+            &pool_msg::QueryMsg::Staker {
                 address: owner.to_string(),
             },
         )?;
@@ -49,10 +51,10 @@ impl Querier<'_> {
         start_after: Option<String>,
         limit: Option<u32>,
         order: Option<OrderBy>,
-    ) -> StdResult<PoolStakersResponse> {
-        let pool_stakers: PoolStakersResponse = self.querier.query_wasm_smart(
+    ) -> StdResult<pool_resp::StakersResponse> {
+        let pool_stakers: pool_resp::StakersResponse = self.querier.query_wasm_smart(
             pool,
-            &PoolQueryMsg::Stakers {
+            &pool_msg::QueryMsg::Stakers {
                 start_after,
                 limit,
                 order,

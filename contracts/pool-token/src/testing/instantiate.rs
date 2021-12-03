@@ -3,8 +3,9 @@ use cosmwasm_std::{from_binary, to_binary, Api, Env, MessageInfo, Response, Uint
 use cw20::{Cw20QueryMsg, TokenInfoResponse};
 use cw20_base::state::{TokenInfo, TOKEN_INFO};
 use pylon_gateway::pool_msg::{QueryMsg as PoolQueryMsg, QueryMsg};
-use pylon_gateway::pool_resp::ConfigResponse;
+use pylon_gateway::pool_resp_v2::ConfigResponse;
 use pylon_gateway::pool_token_msg::InstantiateMsg;
+use pylon_gateway::time_range::TimeRange;
 
 use crate::entrypoints::instantiate;
 use crate::executions::ExecuteResult;
@@ -24,7 +25,7 @@ pub fn default(deps: &mut MockDeps) -> (Env, MessageInfo, Response) {
     deps.querier.register_wasm_smart_query_handler(
         TEST_POOL.to_string(),
         Box::new(|x| match from_binary::<PoolQueryMsg>(x).unwrap() {
-            QueryMsg::Config {} => to_binary(&ConfigResponse {
+            QueryMsg::ConfigV2 {} => to_binary(&ConfigResponse {
                 owner: "".to_string(),
                 token: "".to_string(),
                 share_token: "".to_string(),
@@ -34,7 +35,7 @@ pub fn default(deps: &mut MockDeps) -> (Env, MessageInfo, Response) {
                 reward_token: TEST_REWARD_TOKEN.to_string(),
                 reward_rate: Default::default(),
                 reward_claim_time: vec![],
-                reward_distribution_time: (30 * 86400, 180 * 86400),
+                reward_distribution_time: TimeRange::from((30 * 86400, 180 * 86400, false)),
             }),
             _ => panic!("Unsupported query"),
         }),
