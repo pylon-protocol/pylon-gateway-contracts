@@ -82,7 +82,7 @@ pub fn deposit(
     let mut reward = Reward::load(deps.storage)?;
     let mut user = User::load(deps.storage, &deps.api.addr_canonicalize(sender.as_str())?);
 
-    reward.total_deposit += reward.total_deposit;
+    reward.total_deposit += amount;
     user.amount += amount;
 
     Reward::save(deps.storage, &reward)?;
