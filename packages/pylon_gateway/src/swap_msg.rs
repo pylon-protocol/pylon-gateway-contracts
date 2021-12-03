@@ -6,20 +6,6 @@ use serde::{Deserialize, Serialize};
 use crate::swap_types::{CapStrategy, DistributionStrategy};
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
-#[serde(rename_all = "snake_case")]
-pub enum Strategy {
-    Lockup {
-        release_time: u64,
-        release_amount: Decimal,
-    },
-    Vesting {
-        release_start_time: u64,
-        release_finish_time: u64,
-        release_amount: Decimal,
-    },
-}
-
-#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
 pub struct InstantiateMsg {
     pub beneficiary: String,
     pub start: u64,
