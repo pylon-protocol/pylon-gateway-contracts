@@ -1,5 +1,5 @@
 use cosmwasm_bignumber::Uint256;
-use cosmwasm_std::{to_binary, Deps, Env, Uint128};
+use cosmwasm_std::{to_binary, Deps, Env};
 use pylon_gateway::cap_strategy_msg::QueryMsg;
 use pylon_gateway::pool_resp;
 use pylon_utils::common::OrderBy;
@@ -10,7 +10,7 @@ use crate::states::config::Config;
 use crate::states::reward::Reward;
 use crate::states::user::User;
 
-pub fn query_balance(deps: Deps, env: Env, owner: String) -> super::QueryResult {
+pub fn query_balance(deps: Deps, _env: Env, owner: String) -> super::QueryResult {
     let user_addr = deps.api.addr_canonicalize(owner.as_str())?;
     let user = User::load(deps.storage, &user_addr);
 
@@ -35,12 +35,12 @@ pub fn query_claimable_reward(
             &config,
             &reward,
             &user,
-            &timestamp.unwrap_or(env.block.time.seconds()),
+            &timestamp.unwrap_or_else(|| env.block.time.seconds()),
         )?,
     })?)
 }
 
-pub fn query_available_cap(deps: Deps, env: Env, address: String) -> super::QueryResult {
+pub fn query_available_cap(deps: Deps, _env: Env, address: String) -> super::QueryResult {
     let config = Config::load(deps.storage)?;
     let user_addr = deps.api.addr_canonicalize(address.as_str())?;
     let user = User::load(deps.storage, &user_addr);
