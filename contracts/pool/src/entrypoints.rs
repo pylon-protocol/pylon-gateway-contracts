@@ -262,7 +262,7 @@ pub fn migrate(deps: DepsMut, env: Env, _msg: MigrateMsg) -> executions::Execute
             }
 
             match version.as_str() {
-                "v0.1.1" => Ok(Response::new()), // TODO: do it next time
+                "0.1.1" => Ok(Response::new()), // TODO: do it next time
                 _ => Err(ContractError::InvalidContractVersionForMigration {}),
             }
         }
