@@ -1,8 +1,9 @@
 use cosmwasm_std::testing::{mock_env, mock_info};
 use cosmwasm_std::{
-    to_binary, Addr, Api, CosmosMsg, Decimal, Env, MessageInfo, ReplyOn, Response, SubMsg, Uint128,
-    WasmMsg,
+    from_binary, to_binary, Addr, Api, CosmosMsg, Decimal, Env, MessageInfo, ReplyOn, Response,
+    SubMsg, Uint128, WasmMsg,
 };
+use cw20::{Cw20QueryMsg, TokenInfoResponse};
 use pylon_gateway::pool_msg::InstantiateMsg;
 use pylon_gateway::pool_token_msg::InstantiateMsg as PoolInitMsg;
 use pylon_gateway::time_range::TimeRange;
@@ -24,6 +25,19 @@ pub fn exec(
 }
 
 pub fn default(deps: &mut MockDeps) -> (Env, MessageInfo, Response) {
+    deps.querier.register_wasm_smart_query_handler(
+        TEST_REWARD_TOKEN.to_string(),
+        Box::new(|x| match from_binary::<Cw20QueryMsg>(x).unwrap() {
+            Cw20QueryMsg::TokenInfo {} => to_binary(&TokenInfoResponse {
+                name: "".to_string(),
+                symbol: "".to_string(),
+                decimals: 0,
+                total_supply: Default::default(),
+            }),
+            _ => panic!("Unsupported query"),
+        }),
+    );
+
     let env = mock_env();
     let info = mock_info(TEST_OWNER, &[]);
     let res = exec(deps, env.clone(), info.clone(), default_msg()).unwrap();
@@ -37,13 +51,29 @@ pub fn default_msg() -> InstantiateMsg {
     InstantiateMsg {
         pool_token_code_id: 1234,
         share_token: TEST_SHARE_TOKEN.to_string(),
-        deposit_time: vec![(default_blocktime, default_blocktime + 100, false)],
-        withdraw_time: vec![(default_blocktime, default_blocktime + 100, true)],
+        deposit_time: vec![TimeRange::from((
+            default_blocktime,
+            default_blocktime + 100,
+            false,
+        ))],
+        withdraw_time: vec![TimeRange::from((
+            default_blocktime,
+            default_blocktime + 100,
+            true,
+        ))],
         deposit_cap_strategy: None,
         reward_token: TEST_REWARD_TOKEN.to_string(),
         reward_amount: Uint128::from(1000u128),
-        reward_claim_time: vec![(default_blocktime, default_blocktime + 75, true)],
-        reward_distribution_time: (default_blocktime, default_blocktime + 100),
+        reward_claim_time: vec![TimeRange::from((
+            default_blocktime,
+            default_blocktime + 75,
+            true,
+        ))],
+        reward_distribution_time: TimeRange::from((
+            default_blocktime,
+            default_blocktime + 100,
+            false,
+        )),
     }
 }
 
@@ -111,4 +141,34 @@ fn success() {
             reward_per_token_stored: Default::default()
         }
     )
+}
+
+#[test]
+fn success_other_decimals() {
+    let mut deps = mock_deps();
+    deps.querier.register_wasm_smart_query_handler(
+        TEST_REWARD_TOKEN.to_string(),
+        Box::new(|x| match from_binary::<Cw20QueryMsg>(x).unwrap() {
+            Cw20QueryMsg::TokenInfo {} => to_binary(&TokenInfoResponse {
+                name: "".to_string(),
+                symbol: "".to_string(),
+                decimals: 6,
+                total_supply: Default::default(),
+            }),
+            _ => panic!("Unsupported query"),
+        }),
+    );
+
+    exec(
+        &mut deps,
+        mock_env(),
+        mock_info(TEST_OWNER, &[]),
+        default_msg(),
+    )
+    .unwrap();
+
+    assert_eq!(
+        Config::load(deps.as_ref().storage).unwrap().reward_rate,
+        Decimal::from_ratio(1000u128 * 10u128.pow(6u32), 100u128)
+    );
 }

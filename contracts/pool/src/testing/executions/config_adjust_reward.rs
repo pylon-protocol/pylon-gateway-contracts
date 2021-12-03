@@ -23,7 +23,7 @@ pub fn default(
 ) -> (Env, MessageInfo, Response) {
     let default_msg = instantiate::default_msg();
     let mut env = mock_env();
-    env.block.time = Timestamp::from_seconds(default_msg.reward_distribution_time.0 + after);
+    env.block.time = Timestamp::from_seconds(default_msg.reward_distribution_time.start + after);
     let info = mock_info(MOCK_CONTRACT_ADDR, &[]);
     let res = exec(deps, env.clone(), info.clone(), amount, remove).unwrap();
 

@@ -9,10 +9,10 @@ use cw2::{get_contract_version, set_contract_version, ContractVersion};
 use protobuf::Message;
 use pylon_gateway::pool_msg::{ConfigureMsg, ExecuteMsg, InstantiateMsg, MigrateMsg, QueryMsg};
 use pylon_gateway::pool_token_msg::InstantiateMsg as PoolTokenInitMsg;
-use pylon_gateway::time_range::TimeRange;
 
 use crate::constants::{CONTRACT_NAME, CONTRACT_VERSION, INSTANTIATE_REPLY_ID};
 use crate::error::ContractError;
+use crate::querier::Querier;
 use crate::response::MsgInstantiateContractResponse;
 use crate::states::config::Config;
 use crate::states::reward::Reward;
@@ -29,7 +29,13 @@ pub fn instantiate(
     set_contract_version(deps.storage, CONTRACT_NAME, CONTRACT_VERSION)?;
 
     let api = deps.api;
-    let reward_distribution_time = TimeRange::from(msg.reward_distribution_time);
+    let querier = Querier::new(&deps.querier);
+    let reward_token_addr = deps.api.addr_validate(msg.reward_token.as_str())?;
+    let reward_token_info = querier.load_token_info(&reward_token_addr)?;
+    let reward_rate = Decimal::from_ratio(
+        msg.reward_amount * Uint128::from(10u128.pow(u32::from(reward_token_info.decimals))),
+        msg.reward_distribution_time.period(),
+    );
 
     Config::save(
         deps.storage,
@@ -37,27 +43,15 @@ pub fn instantiate(
             owner: info.sender.clone(),
             token: Addr::unchecked("".to_string()),
             share_token: api.addr_validate(msg.share_token.as_str())?,
-            deposit_time: msg
-                .deposit_time
-                .iter()
-                .map(|x| TimeRange::from(*x))
-                .collect(),
-            withdraw_time: msg
-                .withdraw_time
-                .iter()
-                .map(|x| TimeRange::from(*x))
-                .collect(),
+            deposit_time: msg.deposit_time,
+            withdraw_time: msg.withdraw_time,
             deposit_cap_strategy: msg
                 .deposit_cap_strategy
                 .map(|x| api.addr_validate(x.as_str()).unwrap()),
             reward_token: api.addr_validate(msg.reward_token.as_str())?,
-            reward_rate: Decimal::from_ratio(msg.reward_amount, reward_distribution_time.period()),
-            reward_claim_time: msg
-                .reward_claim_time
-                .iter()
-                .map(|x| TimeRange::from(*x))
-                .collect(),
-            reward_distribution_time: reward_distribution_time.clone(),
+            reward_rate,
+            reward_claim_time: msg.reward_claim_time,
+            reward_distribution_time: msg.reward_distribution_time.clone(),
         },
     )?;
 
@@ -65,7 +59,7 @@ pub fn instantiate(
         deps.storage,
         &Reward {
             total_deposit: Uint128::zero(),
-            last_update_time: reward_distribution_time.start,
+            last_update_time: msg.reward_distribution_time.start,
             reward_per_token_stored: Decimal::zero(),
         },
     )?;

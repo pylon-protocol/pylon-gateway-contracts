@@ -4,19 +4,21 @@ use pylon_utils::common::OrderBy;
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 
+use crate::time_range::TimeRange;
+
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
 pub struct InstantiateMsg {
     pub pool_token_code_id: u64,
     // pool
     pub share_token: String,
-    pub deposit_time: Vec<(u64, u64, bool)>,
-    pub withdraw_time: Vec<(u64, u64, bool)>,
+    pub deposit_time: Vec<TimeRange>,
+    pub withdraw_time: Vec<TimeRange>,
     pub deposit_cap_strategy: Option<String>,
     // reward
     pub reward_token: String,
-    pub reward_amount: Uint128,
-    pub reward_claim_time: Vec<(u64, u64, bool)>,
-    pub reward_distribution_time: (u64, u64),
+    pub reward_amount: Uint128, // without decimal
+    pub reward_claim_time: Vec<TimeRange>,
+    pub reward_distribution_time: TimeRange,
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
@@ -26,9 +28,9 @@ pub enum ConfigureMsg {
         owner: Option<String>,
         share_token: Option<String>,
         reward_token: Option<String>,
-        claim_time: Option<Vec<(u64, u64, bool)>>,
-        deposit_time: Option<Vec<(u64, u64, bool)>>,
-        withdraw_time: Option<Vec<(u64, u64, bool)>>,
+        claim_time: Option<Vec<TimeRange>>,
+        deposit_time: Option<Vec<TimeRange>>,
+        withdraw_time: Option<Vec<TimeRange>>,
         deposit_cap_strategy: Option<String>,
     },
     SubReward {

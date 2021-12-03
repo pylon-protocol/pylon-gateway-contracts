@@ -33,7 +33,7 @@ pub fn exec(
 pub fn default(deps: &mut MockDeps, sender: &str, amount: u128) -> (Env, MessageInfo, Response) {
     let default_msg = instantiate::default_msg();
     let mut env = mock_env();
-    env.block.time = Timestamp::from_seconds(default_msg.reward_distribution_time.1);
+    env.block.time = Timestamp::from_seconds(default_msg.reward_distribution_time.finish);
     let info = mock_info(MOCK_CONTRACT_ADDR, &[]);
     let res = exec(deps, env.clone(), info.clone(), sender, amount).unwrap();
 
@@ -86,7 +86,7 @@ fn fail_unauthorized() {
 
     let default_msg = instantiate::default_msg();
     let mut env = mock_env();
-    env.block.time = Timestamp::from_seconds(default_msg.reward_distribution_time.1);
+    env.block.time = Timestamp::from_seconds(default_msg.reward_distribution_time.finish);
 
     match exec(
         &mut deps,
@@ -108,7 +108,7 @@ fn fail_withdraw_amount_exceeded() {
 
     let default_msg = instantiate::default_msg();
     let mut env = mock_env();
-    env.block.time = Timestamp::from_seconds(default_msg.reward_distribution_time.1);
+    env.block.time = Timestamp::from_seconds(default_msg.reward_distribution_time.finish);
 
     match exec(
         &mut deps,
