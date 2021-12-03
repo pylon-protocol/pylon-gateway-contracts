@@ -1,6 +1,6 @@
 // core
 pub mod constants;
-pub mod contract;
+pub mod entrypoints;
 pub mod error;
 pub mod executions;
 pub mod migrations;

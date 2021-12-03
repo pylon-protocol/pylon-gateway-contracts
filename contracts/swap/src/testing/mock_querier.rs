@@ -1,38 +1,66 @@
 use cosmwasm_std::testing::{MockApi, MockQuerier, MockStorage, MOCK_CONTRACT_ADDR};
-
 use cosmwasm_std::{
-    from_binary, from_slice, to_binary, Api, Coin, ContractResult, OwnedDeps, Querier,
-    QuerierResult, QueryRequest, SystemError, SystemResult, WasmQuery,
+    from_binary, from_slice, to_binary, Coin, ContractResult, Empty, OwnedDeps, Querier,
+    QuerierResult, QueryRequest, SystemError, SystemResult, Uint128, WasmQuery,
 };
-use terra_cosmwasm::{TaxCapResponse, TaxRateResponse, TerraQuery, TerraQueryWrapper, TerraRoute};
+use cw20::{BalanceResponse as Cw20BalanceResponse, Cw20QueryMsg};
+use std::collections::HashMap;
 
-use crate::testing::mock_tax::MockTax;
-use crate::testing::mock_token::MockToken;
-
+/// mock_dependencies is a drop-in replacement for cosmwasm_std::testing::mock_dependencies
+/// this uses our CustomQuerier.
 pub fn mock_dependencies(
     contract_balance: &[Coin],
-) -> OwnedDeps<MockStorage, MockApi, CustomMockQuerier> {
-    let api = MockApi::default();
+) -> OwnedDeps<MockStorage, MockApi, WasmMockQuerier> {
+    let custom_querier: WasmMockQuerier =
+        WasmMockQuerier::new(MockQuerier::new(&[(MOCK_CONTRACT_ADDR, contract_balance)]));
 
     OwnedDeps {
+        api: MockApi::default(),
         storage: MockStorage::default(),
-        api,
-        querier: CustomMockQuerier::new(
-            MockQuerier::new(&[(MOCK_CONTRACT_ADDR, contract_balance)]),
-            api,
-        ),
+        querier: custom_querier,
     }
 }
 
-pub struct CustomMockQuerier {
-    base: MockQuerier<TerraQueryWrapper>,
-    tax: MockTax,
-    token: MockToken,
+pub struct WasmMockQuerier {
+    base: MockQuerier<Empty>,
+    token_querier: TokenQuerier,
 }
 
-impl Querier for CustomMockQuerier {
+#[derive(Clone, Default)]
+pub struct TokenQuerier {
+    // this lets us iterate over all pairs that match the first string
+    balances: HashMap<String, HashMap<String, Uint128>>,
+}
+
+impl TokenQuerier {
+    #[allow(dead_code)]
+    pub fn new(balances: &[(&String, &[(&String, &Uint128)])]) -> Self {
+        TokenQuerier {
+            balances: balances_to_map(balances),
+        }
+    }
+}
+
+#[allow(dead_code)]
+pub(crate) fn balances_to_map(
+    balances: &[(&String, &[(&String, &Uint128)])],
+) -> HashMap<String, HashMap<String, Uint128>> {
+    let mut balances_map: HashMap<String, HashMap<String, Uint128>> = HashMap::new();
+    for (contract_addr, balances) in balances.iter() {
+        let mut contract_balances_map: HashMap<String, Uint128> = HashMap::new();
+        for (addr, balance) in balances.iter() {
+            contract_balances_map.insert(addr.to_string(), **balance);
+        }
+
+        balances_map.insert(contract_addr.to_string(), contract_balances_map);
+    }
+    balances_map
+}
+
+impl Querier for WasmMockQuerier {
     fn raw_query(&self, bin_request: &[u8]) -> QuerierResult {
-        let request: QueryRequest<TerraQueryWrapper> = match from_slice(bin_request) {
+        // MockQuerier doesn't support Custom, so we ignore it completely here
+        let request: QueryRequest<Empty> = match from_slice(bin_request) {
             Ok(v) => v,
             Err(e) => {
                 return SystemResult::Err(SystemError::InvalidRequest {
@@ -45,38 +73,43 @@ impl Querier for CustomMockQuerier {
     }
 }
 
-impl CustomMockQuerier {
-    pub fn handle_query(&self, request: &QueryRequest<TerraQueryWrapper>) -> QuerierResult {
+impl WasmMockQuerier {
+    pub fn handle_query(&self, request: &QueryRequest<Empty>) -> QuerierResult {
         match &request {
-            QueryRequest::Custom(TerraQueryWrapper { route, query_data }) => {
-                if &TerraRoute::Treasury == route {
-                    match query_data {
-                        TerraQuery::TaxRate {} => {
-                            let res = TaxRateResponse {
-                                rate: self.tax.rate,
+            QueryRequest::Wasm(WasmQuery::Smart { contract_addr, msg }) => {
+                match from_binary(msg).unwrap() {
+                    Cw20QueryMsg::Balance { address } => {
+                        let balances: &HashMap<String, Uint128> =
+                            match self.token_querier.balances.get(contract_addr) {
+                                Some(balances) => balances,
+                                None => {
+                                    return SystemResult::Err(SystemError::InvalidRequest {
+                                        error: format!(
+                                            "No balance info exists for the contract {}",
+                                            contract_addr
+                                        ),
+                                        request: msg.as_slice().into(),
+                                    })
+                                }
                             };
-                            SystemResult::Ok(ContractResult::Ok(to_binary(&res).unwrap()))
-                        }
-                        TerraQuery::TaxCap { denom } => {
-                            let cap = self.tax.caps.get(denom).copied().unwrap_or_default();
-                            let res = TaxCapResponse { cap };
-                            SystemResult::Ok(ContractResult::Ok(to_binary(&res).unwrap()))
-                        }
-                        _ => panic!("DO NOT ENTER HERE"),
+
+                        let balance = match balances.get(&address) {
+                            Some(v) => *v,
+                            None => {
+                                return SystemResult::Ok(ContractResult::Ok(
+                                    to_binary(&Cw20BalanceResponse {
+                                        balance: Uint128::zero(),
+                                    })
+                                    .unwrap(),
+                                ));
+                            }
+                        };
+
+                        SystemResult::Ok(ContractResult::Ok(
+                            to_binary(&Cw20BalanceResponse { balance }).unwrap(),
+                        ))
                     }
-                } else {
-                    panic!("DO NOT ENTER HERE")
-                }
-            }
-            QueryRequest::Wasm(WasmQuery::Smart {
-                contract_addr,
-                msg: bin_msg,
-            }) => {
-                if contract_addr.to_string().starts_with("token_") {
-                    self.token
-                        .handle_query(contract_addr, from_binary(bin_msg).unwrap())
-                } else {
-                    panic!("DO NOT ENTER HERE")
+                    _ => panic!("DO NOT ENTER HERE"),
                 }
             }
             _ => self.base.handle_query(request),
@@ -84,22 +117,17 @@ impl CustomMockQuerier {
     }
 }
 
-impl CustomMockQuerier {
-    pub fn new<A: Api>(base: MockQuerier<TerraQueryWrapper>, _api: A) -> Self {
-        CustomMockQuerier {
+impl WasmMockQuerier {
+    pub fn new(base: MockQuerier<Empty>) -> Self {
+        WasmMockQuerier {
             base,
-            tax: MockTax::default(),
-            token: MockToken::default(),
+            token_querier: TokenQuerier::default(),
         }
     }
 
     #[allow(dead_code)]
-    pub fn with_tax(&mut self, tax: MockTax) {
-        self.tax = tax;
-    }
-
-    #[allow(dead_code)]
-    pub fn with_token(&mut self, token: MockToken) {
-        self.token = token;
+    // configure the mint whitelist mock querier
+    pub fn with_token_balances(&mut self, balances: &[(&String, &[(&String, &Uint128)])]) {
+        self.token_querier = TokenQuerier::new(balances);
     }
 }

@@ -38,17 +38,18 @@ pub struct InstantiateMsg {
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
 #[serde(rename_all = "snake_case")]
 pub enum ConfigureMsg {
-    Swap {
+    Config {
         owner: Option<String>,
         beneficiary: Option<String>,
-        cap_strategy: Option<String>,
+        input_token: Option<String>,
+        output_token: Option<String>,
+        deposit_cap_strategy: Option<CapStrategy>,
+        distribution_strategies: Option<Vec<DistributionStrategy>>,
         whitelist_enabled: Option<bool>,
     },
-    Pool {
-        x_denom: Option<String>,
-        y_addr: Option<String>,
-        liq_x: Option<Uint128>,
-        liq_y: Option<Uint128>,
+    State {
+        x_liquidity: Option<Uint128>,
+        y_liquidity: Option<Uint128>,
     },
     Whitelist {
         whitelist: bool,
@@ -88,4 +89,10 @@ pub enum QueryMsg {
 
 /// We currently take no arguments for migrations
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
-pub struct MigrateMsg {}
+#[serde(rename_all = "snake_case")]
+pub enum MigrateMsg {
+    Pylon {},
+    Nexus {},
+    Valkyrie {},
+    General {},
+}

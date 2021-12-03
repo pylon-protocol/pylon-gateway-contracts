@@ -1,5 +1,5 @@
 use cosmwasm_std::{Decimal, Uint128};
-use pylon_gateway::swap_msg::DistributionStrategy as SwapDistributionStrategy;
+use pylon_gateway::swap_types::DistributionStrategy as SwapDistributionStrategy;
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 
@@ -97,9 +97,9 @@ impl DistributionStrategy {
             (release_amount, true)
         } else {
             (
-                Decimal(
-                    release_amount * Uint128::from(*time - release_start_time)
-                        / Uint128::from(release_finish_time - release_start_time),
+                Decimal::from_ratio(
+                    release_amount * Uint128::from(*time - release_start_time),
+                    Uint128::from(release_finish_time - release_start_time),
                 ),
                 false,
             )

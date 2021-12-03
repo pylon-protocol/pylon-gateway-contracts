@@ -7,23 +7,15 @@ pub fn update(
     deps: DepsMut,
     _env: Env,
     _info: MessageInfo,
-    x_denom: Option<String>,
-    y_addr: Option<String>,
-    liq_x: Option<Uint128>,
-    liq_y: Option<Uint128>,
+    x_liquidity: Option<Uint128>,
+    y_liquidity: Option<Uint128>,
 ) -> super::ExecuteResult {
     let mut state = State::load(deps.storage)?;
 
-    if let Some(v) = x_denom {
-        state.x_denom = v;
-    }
-    if let Some(v) = y_addr {
-        state.y_addr = deps.api.addr_validate(v.as_str())?;
-    }
-    if let Some(v) = liq_x {
+    if let Some(v) = x_liquidity {
         state.x_liquidity = v;
     }
-    if let Some(v) = liq_y {
+    if let Some(v) = y_liquidity {
         state.y_liquidity = v;
     }
 

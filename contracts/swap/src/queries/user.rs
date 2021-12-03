@@ -1,4 +1,4 @@
-use cosmwasm_std::{to_binary, Deps, Env};
+use cosmwasm_std::{to_binary, Deps, Env, QuerierWrapper};
 use pylon_gateway::swap_resp::{UserResponse, UsersResponse};
 use pylon_utils::common::OrderBy;
 
@@ -6,16 +6,21 @@ use crate::executions::swap::calculate_claimable_tokens;
 use crate::states::config::Config;
 use crate::states::user::User;
 
-fn to_response(config: &Config, user: &User, env: &Env) -> UserResponse {
-    let claimable_token = calculate_claimable_tokens(&config, &user, env.block.time.seconds());
+fn to_response(
+    querier: QuerierWrapper,
+    config: &Config,
+    user: &User,
+    address: String,
+    time: u64,
+) -> UserResponse {
+    let claimable_token = calculate_claimable_tokens(&config, &user, time);
 
     UserResponse {
         whitelisted: user.whitelisted,
         swapped_in: user.swapped_in,
         available_cap: match config.deposit_cap_strategy.clone() {
             Some(strategy) => {
-                let (cap, unlimited) =
-                    strategy.available_cap_of(deps.querier, address, user.swapped_in);
+                let (cap, unlimited) = strategy.available_cap_of(querier, address, user.swapped_in);
                 if unlimited {
                     None
                 } else {
@@ -34,7 +39,13 @@ pub fn query_user(deps: Deps, env: Env, address: String) -> super::QueryResult {
     let user = User::load(deps.storage, &user_addr);
     let config = Config::load(deps.storage)?;
 
-    Ok(to_binary(&to_response(&config, &user, &env))?)
+    Ok(to_binary(&to_response(
+        deps.querier,
+        &config,
+        &user,
+        address,
+        env.block.time.seconds(),
+    ))?)
 }
 
 pub fn query_users(
@@ -54,9 +65,16 @@ pub fn query_users(
     )
     .iter()
     .map(|(user_addr, user)| -> (String, UserResponse) {
+        let user_addr = api.addr_humanize(user_addr).unwrap();
         (
-            api.addr_humanize(user_addr).unwrap().to_string(),
-            to_response(&config, user, &env),
+            user_addr.to_string(),
+            to_response(
+                deps.querier,
+                &config,
+                user,
+                user_addr.to_string(),
+                env.block.time.seconds(),
+            ),
         )
     })
     .collect();

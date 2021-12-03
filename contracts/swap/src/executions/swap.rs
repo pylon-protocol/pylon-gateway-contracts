@@ -205,12 +205,12 @@ pub fn claim(deps: DepsMut, env: Env, info: MessageInfo) -> super::ExecuteResult
 const EARN_LOCK_PERIOD: u64 = 86400 * 7;
 
 pub fn earn(deps: DepsMut, env: Env, info: MessageInfo) -> super::ExecuteResult {
-    let state = state::read(deps.storage).load().unwrap();
-    let config = config::read(deps.storage).load().unwrap();
+    let state = State::load(deps.storage)?;
+    let config = Config::load(deps.storage)?;
     if config.beneficiary != info.sender {
         return Err(ContractError::Unauthorized {
             action: "earn".to_string(),
-            expected: config.beneficiary,
+            expected: config.beneficiary.to_string(),
             actual: info.sender.to_string(),
         });
     }
@@ -221,7 +221,7 @@ pub fn earn(deps: DepsMut, env: Env, info: MessageInfo) -> super::ExecuteResult 
 
     Ok(Response::new()
         .add_message(CosmosMsg::Bank(BankMsg::Send {
-            to_address: config.beneficiary,
+            to_address: config.beneficiary.to_string(),
             amount: vec![deduct_tax(
                 deps.as_ref(),
                 deps.querier

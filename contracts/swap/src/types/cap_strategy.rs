@@ -1,5 +1,5 @@
 use cosmwasm_std::{Decimal, QuerierWrapper, StdResult, Uint128};
-use pylon_gateway::swap_msg::CapStrategy as SwapCapStrategy;
+use pylon_gateway::swap_types::CapStrategy as SwapCapStrategy;
 use pylon_token::gov_msg::QueryMsg as GovQueryMsg;
 use pylon_token::gov_resp::StakerResponse as GovStakerResponse;
 use schemars::JsonSchema;
