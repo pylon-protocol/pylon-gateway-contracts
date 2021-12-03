@@ -28,13 +28,17 @@ pub fn instantiate(
 ) -> executions::ExecuteResult {
     set_contract_version(deps.storage, CONTRACT_NAME, CONTRACT_VERSION)?;
 
+    // ignore inverse field of reward_distribution_time
+    let mut reward_distribution_time = msg.reward_distribution_time;
+    reward_distribution_time.inverse = false;
+
     let api = deps.api;
     let querier = Querier::new(&deps.querier);
     let reward_token_addr = deps.api.addr_validate(msg.reward_token.as_str())?;
     let reward_token_info = querier.load_token_info(&reward_token_addr)?;
     let reward_rate = Decimal::from_ratio(
         msg.reward_amount * Uint128::from(10u128.pow(u32::from(reward_token_info.decimals))),
-        msg.reward_distribution_time.period(),
+        reward_distribution_time.period(),
     );
 
     Config::save(
@@ -51,7 +55,7 @@ pub fn instantiate(
             reward_token: api.addr_validate(msg.reward_token.as_str())?,
             reward_rate,
             reward_claim_time: msg.reward_claim_time,
-            reward_distribution_time: msg.reward_distribution_time.clone(),
+            reward_distribution_time: reward_distribution_time.clone(),
         },
     )?;
 
@@ -59,7 +63,7 @@ pub fn instantiate(
         deps.storage,
         &Reward {
             total_deposit: Uint128::zero(),
-            last_update_time: msg.reward_distribution_time.start,
+            last_update_time: reward_distribution_time.start,
             reward_per_token_stored: Decimal::zero(),
         },
     )?;
