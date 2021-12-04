@@ -3,21 +3,11 @@ use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 use std::fmt::{Display, Formatter};
 
-#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
+#[derive(Serialize, Deserialize, Default, Clone, Debug, PartialEq, JsonSchema)]
 pub struct TimeRange {
     pub start: u64,
     pub finish: u64,
     pub inverse: bool,
-}
-
-impl Default for TimeRange {
-    fn default() -> Self {
-        TimeRange {
-            start: 0,
-            finish: 0,
-            inverse: false,
-        }
-    }
 }
 
 impl Display for TimeRange {
