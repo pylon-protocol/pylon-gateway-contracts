@@ -1,45 +1,46 @@
-use cosmwasm_bignumber::Uint256;
+use cosmwasm_std::Uint128;
 use cw20::Cw20ReceiveMsg;
+use pylon_utils::common::OrderBy;
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 
+use crate::time_range::TimeRange;
+
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
 pub struct InstantiateMsg {
-    pub start: u64,
-    pub period: u64,
-    pub cliff: u64,
+    pub pool_token_code_id: Option<u64>,
+    // pool
     pub share_token: String,
+    pub deposit_time: Vec<TimeRange>,
+    pub withdraw_time: Vec<TimeRange>,
+    pub deposit_cap_strategy: Option<String>,
+    // reward
     pub reward_token: String,
-    pub reward_amount: Uint256,
-    pub cap_strategy: Option<String>,
+    pub reward_amount: Uint128, // without decimal
+    pub reward_claim_time: Vec<TimeRange>,
+    pub reward_distribution_time: TimeRange,
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
 #[serde(rename_all = "snake_case")]
 pub enum ConfigureMsg {
-    Pool {
+    Config {
         owner: Option<String>,
         share_token: Option<String>,
         reward_token: Option<String>,
-    },
-    Deposit {
-        start: Option<u64>,
-        finish: Option<u64>,
-        user_cap: Option<Uint256>,
-        total_cap: Option<Uint256>,
-    },
-    Withdraw {
-        strategy: Vec<(u64, u64, bool)>,
-    },
-    Claim {
-        start: Option<u64>,
-        finish: Option<u64>,
+        claim_time: Option<Vec<TimeRange>>,
+        deposit_time: Option<Vec<TimeRange>>,
+        withdraw_time: Option<Vec<TimeRange>>,
+        deposit_cap_strategy: Option<String>,
     },
     SubReward {
-        amount: Uint256,
+        amount: Uint128,
     },
     AddReward {
-        amount: Uint256,
+        amount: Uint128,
+    },
+    AddPoolToken {
+        code_id: u64,
     },
 }
 
@@ -48,13 +49,32 @@ pub enum ConfigureMsg {
 pub enum ExecuteMsg {
     // core
     Receive(Cw20ReceiveMsg),
-    Update { target: Option<String> },
-    Withdraw { amount: Uint256 },
-    Claim {},
+    Update {
+        target: Option<String>,
+    },
+    Withdraw {
+        amount: Uint128,
+    },
+    Claim {
+        target: Option<String>,
+    },
     // internal
-    DepositInternal { sender: String, amount: Uint256 },
-    WithdrawInternal { sender: String, amount: Uint256 },
-    ClaimInternal { sender: String },
+    TransferInternal {
+        owner: String,
+        recipient: String,
+        amount: Uint128,
+    },
+    DepositInternal {
+        sender: String,
+        amount: Uint128,
+    },
+    WithdrawInternal {
+        sender: String,
+        amount: Uint128,
+    },
+    ClaimInternal {
+        sender: String,
+    },
     // owner
     Configure(ConfigureMsg),
 }
@@ -68,24 +88,34 @@ pub enum Cw20HookMsg {
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
 #[serde(rename_all = "snake_case")]
 pub enum QueryMsg {
-    Config {}, // state::Config
-    Stakers {
-        start_after: Option<String>,
-        limit: Option<u32>,
-    },
-    Reward {}, // state::Reward
+    // v1
+    Config {},
     BalanceOf {
         owner: String,
-    }, // -> Uint256
-    AvailableCapOf {
-        address: String,
     },
     ClaimableReward {
         owner: String,
-    }, // -> Uint256
+        timestamp: Option<u64>,
+    },
+    AvailableCapOf {
+        address: String,
+    },
+
+    // v2
+    ConfigV2 {},
+
+    // common
+    Reward {},
+    Staker {
+        address: String,
+    },
+    Stakers {
+        start_after: Option<String>,
+        limit: Option<u32>,
+        order: Option<OrderBy>,
+    },
 }
 
 /// We currently take no arguments for migrations
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
-#[serde(rename_all = "snake_case")]
-pub enum MigrateMsg {}
+pub struct MigrateMsg {}
