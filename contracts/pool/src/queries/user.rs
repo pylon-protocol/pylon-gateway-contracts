@@ -30,13 +30,16 @@ pub fn query_claimable_reward(
     let user_addr = deps.api.addr_canonicalize(owner.as_str())?;
     let user = User::load(deps.storage, &user_addr);
 
+    let applicable_reward_time = min(
+        max(
+            timestamp.unwrap_or_else(|| env.block.time.seconds()),
+            config.reward_distribution_time.start,
+        ),
+        config.reward_distribution_time.finish,
+    );
+
     Ok(to_binary(&pool_resp::ClaimableRewardResponse {
-        amount: calculate_rewards(
-            &config,
-            &reward,
-            &user,
-            &timestamp.unwrap_or_else(|| env.block.time.seconds()),
-        )?,
+        amount: calculate_rewards(&config, &reward, &user, &applicable_reward_time)?,
     })?)
 }
 
