@@ -49,7 +49,7 @@ pub fn default_msg() -> InstantiateMsg {
     let default_blocktime = mock_env().block.time.seconds();
 
     InstantiateMsg {
-        pool_token_code_id: 1234,
+        pool_token_code_id: Some(1234),
         share_token: TEST_SHARE_TOKEN.to_string(),
         deposit_time: vec![TimeRange::from((
             default_blocktime,

@@ -8,7 +8,7 @@ use crate::time_range::TimeRange;
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
 pub struct InstantiateMsg {
-    pub pool_token_code_id: u64,
+    pub pool_token_code_id: Option<u64>,
     // pool
     pub share_token: String,
     pub deposit_time: Vec<TimeRange>,
@@ -38,6 +38,9 @@ pub enum ConfigureMsg {
     },
     AddReward {
         amount: Uint128,
+    },
+    AddPoolToken {
+        code_id: u64,
     },
 }
 

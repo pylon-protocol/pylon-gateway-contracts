@@ -68,22 +68,27 @@ pub fn instantiate(
         },
     )?;
 
-    Ok(Response::new().add_submessage(SubMsg {
-        // Create DP token
-        msg: WasmMsg::Instantiate {
-            admin: Some(info.sender.to_string()),
-            code_id: msg.pool_token_code_id,
-            funds: vec![],
-            label: "".to_string(),
-            msg: to_binary(&PoolTokenInitMsg {
-                pool: env.contract.address.to_string(),
-            })?,
-        }
-        .into(),
-        gas_limit: None,
-        id: INSTANTIATE_REPLY_ID,
-        reply_on: ReplyOn::Success,
-    }))
+    let mut response = Response::new();
+    if let Some(code_id) = msg.pool_token_code_id {
+        response = response.add_submessage(SubMsg {
+            // Create DP token
+            msg: WasmMsg::Instantiate {
+                admin: Some(info.sender.to_string()),
+                code_id,
+                funds: vec![],
+                label: "".to_string(),
+                msg: to_binary(&PoolTokenInitMsg {
+                    pool: env.contract.address.to_string(),
+                })?,
+            }
+            .into(),
+            gas_limit: None,
+            id: INSTANTIATE_REPLY_ID,
+            reply_on: ReplyOn::Success,
+        });
+    }
+
+    Ok(response)
 }
 
 #[allow(dead_code)]
@@ -178,6 +183,24 @@ pub fn execute(
                 }
                 ConfigureMsg::AddReward { amount } => {
                     executions::config::adjust_reward(deps, env, amount, false)
+                }
+                ConfigureMsg::AddPoolToken { code_id } => {
+                    Ok(Response::new().add_submessage(SubMsg {
+                        // Create DP token
+                        msg: WasmMsg::Instantiate {
+                            admin: Some(config.owner.to_string()),
+                            code_id,
+                            funds: vec![],
+                            label: "".to_string(),
+                            msg: to_binary(&PoolTokenInitMsg {
+                                pool: env.contract.address.to_string(),
+                            })?,
+                        }
+                        .into(),
+                        gas_limit: None,
+                        id: INSTANTIATE_REPLY_ID,
+                        reply_on: ReplyOn::Success,
+                    }))
                 }
             }
         }
