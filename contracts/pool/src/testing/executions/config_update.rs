@@ -18,9 +18,9 @@ pub fn exec(
     owner: Option<&str>,
     share_token: Option<&str>,
     reward_token: Option<&str>,
-    claim_time: Option<Vec<(u64, u64, bool)>>,
-    deposit_time: Option<Vec<(u64, u64, bool)>>,
-    withdraw_time: Option<Vec<(u64, u64, bool)>>,
+    claim_time: Option<Vec<TimeRange>>,
+    deposit_time: Option<Vec<TimeRange>>,
+    withdraw_time: Option<Vec<TimeRange>>,
     deposit_cap_strategy: Option<&str>,
 ) -> ExecuteResult {
     update(
@@ -49,9 +49,9 @@ fn success() {
         Some(TEST_STAKER_1),
         Some(TEST_REWARD_TOKEN),
         Some(TEST_SHARE_TOKEN),
-        Some(vec![(1, 2, false)]),
-        Some(vec![(3, 4, false)]),
-        Some(vec![(5, 6, false)]),
+        Some(vec![TimeRange::from((1, 2, false))]),
+        Some(vec![TimeRange::from((3, 4, false))]),
+        Some(vec![TimeRange::from((5, 6, false))]),
         Some(TEST_STAKER_2),
     )
     .unwrap();
@@ -70,11 +70,7 @@ fn success() {
             reward_token: deps.api.addr_validate(TEST_SHARE_TOKEN).unwrap(),
             reward_rate: Decimal::from_ratio(10u128, 1u128),
             reward_claim_time: vec![TimeRange::from((1, 2, false))],
-            reward_distribution_time: TimeRange {
-                start: default_msg.reward_distribution_time.0,
-                finish: default_msg.reward_distribution_time.1,
-                inverse: false
-            }
+            reward_distribution_time: default_msg.reward_distribution_time,
         }
     );
 }

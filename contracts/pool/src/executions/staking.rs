@@ -82,7 +82,7 @@ pub fn deposit(
     let mut reward = Reward::load(deps.storage)?;
     let mut user = User::load(deps.storage, &deps.api.addr_canonicalize(sender.as_str())?);
 
-    reward.total_deposit += reward.total_deposit;
+    reward.total_deposit += amount;
     user.amount += amount;
 
     Reward::save(deps.storage, &reward)?;
@@ -205,21 +205,23 @@ pub fn transfer(
         });
     }
 
-    let owner_addr = deps.api.addr_canonicalize(owner.as_str())?;
-    let recipient_addr = deps.api.addr_canonicalize(recipient.as_str())?;
+    if owner != recipient {
+        let owner_addr = deps.api.addr_canonicalize(owner.as_str())?;
+        let recipient_addr = deps.api.addr_canonicalize(recipient.as_str())?;
 
-    let mut owner = User::load(deps.storage, &owner_addr);
-    let mut recipient = User::load(deps.storage, &recipient_addr);
+        let mut owner = User::load(deps.storage, &owner_addr);
+        let mut recipient = User::load(deps.storage, &recipient_addr);
 
-    if owner.amount < amount {
-        return Err(ContractError::TransferAmountExceeded { amount });
+        if owner.amount < amount {
+            return Err(ContractError::TransferAmountExceeded { amount });
+        }
+
+        owner.amount -= amount;
+        recipient.amount += amount;
+
+        User::save(deps.storage, &owner_addr, &owner)?;
+        User::save(deps.storage, &recipient_addr, &recipient)?;
     }
-
-    owner.amount -= amount;
-    recipient.amount += amount;
-
-    User::save(deps.storage, &owner_addr, &owner)?;
-    User::save(deps.storage, &recipient_addr, &recipient)?;
 
     Ok(Response::new().add_attributes(vec![attr("action", "transfer_internal")]))
 }

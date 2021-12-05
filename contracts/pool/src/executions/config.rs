@@ -12,9 +12,9 @@ pub fn update(
     owner: Option<String>,
     share_token: Option<String>,
     reward_token: Option<String>,
-    claim_time: Option<Vec<(u64, u64, bool)>>,
-    deposit_time: Option<Vec<(u64, u64, bool)>>,
-    withdraw_time: Option<Vec<(u64, u64, bool)>>,
+    claim_time: Option<Vec<TimeRange>>,
+    deposit_time: Option<Vec<TimeRange>>,
+    withdraw_time: Option<Vec<TimeRange>>,
     deposit_cap_strategy: Option<String>,
 ) -> super::ExecuteResult {
     let mut config = Config::load(deps.storage)?;
@@ -32,34 +32,13 @@ pub fn update(
     }
     // times
     if let Some(v) = claim_time {
-        config.reward_claim_time = v
-            .iter()
-            .map(|(start, finish, inverse)| TimeRange {
-                start: *start,
-                finish: *finish,
-                inverse: *inverse,
-            })
-            .collect();
+        config.reward_claim_time = v;
     }
     if let Some(v) = deposit_time {
-        config.deposit_time = v
-            .iter()
-            .map(|(start, finish, inverse)| TimeRange {
-                start: *start,
-                finish: *finish,
-                inverse: *inverse,
-            })
-            .collect();
+        config.deposit_time = v;
     }
     if let Some(v) = withdraw_time {
-        config.withdraw_time = v
-            .iter()
-            .map(|(start, finish, inverse)| TimeRange {
-                start: *start,
-                finish: *finish,
-                inverse: *inverse,
-            })
-            .collect();
+        config.withdraw_time = v;
     }
     // strategy
     if let Some(v) = deposit_cap_strategy {

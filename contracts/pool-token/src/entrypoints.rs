@@ -40,7 +40,8 @@ pub fn instantiate(
     let reward_token_info =
         querier.load_token_info(&deps.api.addr_validate(pool_config.reward_token.as_str())?)?;
 
-    let (distribution_start, distribution_finish) = pool_config.reward_distribution_time;
+    let distribution_start = pool_config.reward_distribution_time.start;
+    let distribution_finish = pool_config.reward_distribution_time.finish;
     let months = (distribution_finish - distribution_start) / (30 * 86400);
 
     TOKEN_INFO.save(
