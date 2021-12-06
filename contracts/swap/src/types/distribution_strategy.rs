@@ -1,5 +1,5 @@
 use cosmwasm_std::{Decimal, Uint128};
-use pylon_gateway::swap_types::DistributionStrategy as SwapDistributionStrategy;
+use pylon_gateway::swap_types;
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 
@@ -21,54 +21,31 @@ pub enum DistributionStrategy {
     },
 }
 
-impl From<SwapDistributionStrategy> for DistributionStrategy {
-    fn from(strategy: SwapDistributionStrategy) -> Self {
-        match strategy {
-            DistributionStrategy::Lockup {
-                release_time,
-                release_amount,
-            } => Self::Lockup {
-                release_time,
-                release_amount,
-            },
-            DistributionStrategy::Vesting {
-                release_start_time,
-                release_finish_time,
-                release_amount,
-            } => Self::Vesting {
-                release_start_time,
-                release_finish_time,
-                release_amount,
-            },
-        }
-    }
-}
-
 impl DistributionStrategy {
-    pub fn check_release_time(self, time: &u64) -> bool {
+    pub fn check_release_time(&self, time: &u64) -> bool {
         match self {
-            DistributionStrategy::Lockup { release_time, .. } => *time <= release_time,
+            DistributionStrategy::Lockup { release_time, .. } => time <= release_time,
             DistributionStrategy::Vesting {
                 release_start_time, ..
-            } => *time <= release_start_time,
+            } => time <= release_start_time,
         }
     }
 
-    pub fn release_amount_at(self, time: &u64) -> DistributionStrategyResult {
+    pub fn release_amount_at(&self, time: &u64) -> DistributionStrategyResult {
         match self {
             Self::Lockup {
                 release_time,
                 release_amount,
-            } => Self::handle_lockup_strategy(time, release_time, release_amount),
+            } => Self::handle_lockup_strategy(time, *release_time, *release_amount),
             Self::Vesting {
                 release_start_time,
                 release_finish_time,
                 release_amount,
             } => Self::handle_vesting_strategy(
                 time,
-                release_start_time,
-                release_finish_time,
-                release_amount,
+                *release_start_time,
+                *release_finish_time,
+                *release_amount,
             ),
         }
     }
@@ -81,7 +58,7 @@ impl DistributionStrategy {
         if time < &release_time {
             (Decimal::zero(), false)
         } else {
-            (*release_amount, true)
+            (release_amount, true)
         }
     }
 
@@ -103,6 +80,52 @@ impl DistributionStrategy {
                 ),
                 false,
             )
+        }
+    }
+}
+
+impl From<swap_types::DistributionStrategy> for DistributionStrategy {
+    fn from(strategy: swap_types::DistributionStrategy) -> Self {
+        match strategy {
+            swap_types::DistributionStrategy::Lockup {
+                release_time,
+                release_amount,
+            } => Self::Lockup {
+                release_time,
+                release_amount,
+            },
+            swap_types::DistributionStrategy::Vesting {
+                release_start_time,
+                release_finish_time,
+                release_amount,
+            } => Self::Vesting {
+                release_start_time,
+                release_finish_time,
+                release_amount,
+            },
+        }
+    }
+}
+
+impl From<DistributionStrategy> for swap_types::DistributionStrategy {
+    fn from(strategy: DistributionStrategy) -> Self {
+        match strategy {
+            DistributionStrategy::Lockup {
+                release_time,
+                release_amount,
+            } => Self::Lockup {
+                release_time,
+                release_amount,
+            },
+            DistributionStrategy::Vesting {
+                release_start_time,
+                release_finish_time,
+                release_amount,
+            } => Self::Vesting {
+                release_start_time,
+                release_finish_time,
+                release_amount,
+            },
         }
     }
 }

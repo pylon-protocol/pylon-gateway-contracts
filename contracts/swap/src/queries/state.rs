@@ -3,7 +3,7 @@ use pylon_gateway::swap_resp::StateResponse;
 
 use crate::states::state::State;
 
-pub fn query_state(deps: Deps, env: Env) -> super::QueryResult {
+pub fn query_state(deps: Deps, _env: Env) -> super::QueryResult {
     let state = State::load(deps.storage)?;
 
     Ok(to_binary(&StateResponse {

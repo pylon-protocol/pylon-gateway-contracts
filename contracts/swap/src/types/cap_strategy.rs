@@ -1,12 +1,10 @@
-use cosmwasm_std::{Decimal, QuerierWrapper, StdResult, Uint128};
-use pylon_gateway::swap_types::CapStrategy as SwapCapStrategy;
-use pylon_token::gov_msg::QueryMsg as GovQueryMsg;
-use pylon_token::gov_resp::StakerResponse as GovStakerResponse;
+use cosmwasm_std::{Decimal, QuerierWrapper, Uint128};
+use pylon_gateway::swap_types;
+use pylon_token::gov_msg;
+use pylon_token::gov_resp;
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 use std::cmp::{max, min};
-
-use crate::error::ContractError;
 
 pub type CapStrategyResult = (Uint128, bool);
 
@@ -48,48 +46,6 @@ pub enum CapStrategy {
         // 4. cap_weight
         stages: Vec<(Option<Uint128>, Option<Uint128>, Uint128, Decimal)>,
     },
-}
-
-impl From<SwapCapStrategy> for CapStrategy {
-    fn from(strategy: SwapCapStrategy) -> Self {
-        match strategy {
-            SwapCapStrategy::Fixed {
-                min_user_cap,
-                max_user_cap,
-            } => Self::Fixed {
-                min_user_cap,
-                max_user_cap,
-            },
-            SwapCapStrategy::GovFixed {
-                contract,
-                min_stake_amount,
-                min_user_cap,
-                max_user_cap,
-            } => Self::GovFixed {
-                contract,
-                min_stake_amount,
-                min_user_cap,
-                max_user_cap,
-            },
-            SwapCapStrategy::GovLinear {
-                contract,
-                cap_start,
-                cap_weight,
-                min_stake_amount,
-                max_stake_amount,
-            } => Self::GovLinear {
-                contract,
-                cap_start,
-                cap_weight,
-                min_stake_amount,
-                max_stake_amount,
-            },
-            SwapCapStrategy::GovStaged { contract, stages } => Self::GovStaged { contract, stages },
-            SwapCapStrategy::GovLinearStaged { contract, stages } => {
-                Self::GovLinearStaged { contract, stages }
-            }
-        }
-    }
 }
 
 impl CapStrategy {
@@ -152,7 +108,7 @@ impl CapStrategy {
         min_user_cap: Option<Uint128>,
         max_user_cap: Option<Uint128>,
     ) -> CapStrategyResult {
-        if amount < min_user_cap.unwrap_or(Uint128::zero()) {
+        if amount < min_user_cap.unwrap_or_else(Uint128::zero) {
             return ERROR;
         }
 
@@ -171,13 +127,14 @@ impl CapStrategy {
         min_user_cap: Option<Uint128>,
         max_user_cap: Option<Uint128>,
     ) -> CapStrategyResult {
-        let staker = querier
-            .query_wasm_smart::<GovStakerResponse>(contract, &GovQueryMsg::Staker { address })?;
+        let staker: gov_resp::StakerResponse = querier
+            .query_wasm_smart(contract, &gov_msg::QueryMsg::Staker { address })
+            .unwrap();
         if staker.balance < min_stake_amount {
             return ERROR;
         }
 
-        if amount < min_user_cap.unwrap_or(Uint128::zero()) {
+        if amount < min_user_cap.unwrap_or_else(Uint128::zero) {
             return ERROR;
         }
 
@@ -193,6 +150,7 @@ impl CapStrategy {
         }
     }
 
+    #[allow(clippy::too_many_arguments)]
     fn handle_gov_linear_strategy(
         querier: QuerierWrapper,
         address: String,
@@ -203,10 +161,11 @@ impl CapStrategy {
         min_stake_amount: Option<Uint128>,
         max_stake_amount: Option<Uint128>,
     ) -> CapStrategyResult {
-        let staker = querier
-            .query_wasm_smart::<GovStakerResponse>(contract, &GovQueryMsg::Staker { address })?;
+        let staker: gov_resp::StakerResponse = querier
+            .query_wasm_smart(contract, &gov_msg::QueryMsg::Staker { address })
+            .unwrap();
 
-        let min_stake_amount = min_stake_amount.unwrap_or(Uint128::zero());
+        let min_stake_amount = min_stake_amount.unwrap_or_else(Uint128::zero);
         if staker.balance < min_stake_amount {
             return ERROR;
         }
@@ -233,8 +192,9 @@ impl CapStrategy {
         contract: String,
         stages: Vec<(Option<Uint128>, Option<Uint128>, Uint128)>,
     ) -> CapStrategyResult {
-        let staker = querier
-            .query_wasm_smart::<GovStakerResponse>(contract, &GovQueryMsg::Staker { address })?;
+        let staker: gov_resp::StakerResponse = querier
+            .query_wasm_smart(contract, &gov_msg::QueryMsg::Staker { address })
+            .unwrap();
 
         let mut cap = Uint128::zero();
         for (from, to, applied_cap) in stages.iter() {
@@ -244,7 +204,7 @@ impl CapStrategy {
                 if from <= staker.balance {
                     match to {
                         Some(to) => {
-                            if staker.balance < to {
+                            if staker.balance < *to {
                                 *applied_cap
                             } else {
                                 Uint128::zero()
@@ -272,8 +232,9 @@ impl CapStrategy {
         contract: String,
         stages: Vec<(Option<Uint128>, Option<Uint128>, Uint128, Decimal)>,
     ) -> CapStrategyResult {
-        let staker = querier
-            .query_wasm_smart::<GovStakerResponse>(contract, &GovQueryMsg::Staker { address })?;
+        let staker: gov_resp::StakerResponse = querier
+            .query_wasm_smart(contract, &gov_msg::QueryMsg::Staker { address })
+            .unwrap();
 
         let mut cap = Uint128::zero();
         for (from, to, cap_start, cap_weight) in stages.iter() {
@@ -284,7 +245,7 @@ impl CapStrategy {
                     match to {
                         Some(to) => {
                             let dx = min(*to, staker.balance) - from;
-                            cap_start + (dx * cap_weight)
+                            *cap_start + (*cap_weight * dx)
                         }
                         None => return UNLIMITED, // unlimited
                     }
@@ -298,6 +259,92 @@ impl CapStrategy {
             ERROR
         } else {
             (cap - amount, false)
+        }
+    }
+}
+
+impl From<swap_types::CapStrategy> for CapStrategy {
+    fn from(strategy: swap_types::CapStrategy) -> Self {
+        match strategy {
+            swap_types::CapStrategy::Fixed {
+                min_user_cap,
+                max_user_cap,
+            } => Self::Fixed {
+                min_user_cap,
+                max_user_cap,
+            },
+            swap_types::CapStrategy::GovFixed {
+                contract,
+                min_stake_amount,
+                min_user_cap,
+                max_user_cap,
+            } => Self::GovFixed {
+                contract,
+                min_stake_amount,
+                min_user_cap,
+                max_user_cap,
+            },
+            swap_types::CapStrategy::GovLinear {
+                contract,
+                cap_start,
+                cap_weight,
+                min_stake_amount,
+                max_stake_amount,
+            } => Self::GovLinear {
+                contract,
+                cap_start,
+                cap_weight,
+                min_stake_amount,
+                max_stake_amount,
+            },
+            swap_types::CapStrategy::GovStaged { contract, stages } => {
+                Self::GovStaged { contract, stages }
+            }
+            swap_types::CapStrategy::GovLinearStaged { contract, stages } => {
+                Self::GovLinearStaged { contract, stages }
+            }
+        }
+    }
+}
+
+impl From<CapStrategy> for swap_types::CapStrategy {
+    fn from(strategy: CapStrategy) -> Self {
+        match strategy {
+            CapStrategy::Fixed {
+                min_user_cap,
+                max_user_cap,
+            } => Self::Fixed {
+                min_user_cap,
+                max_user_cap,
+            },
+            CapStrategy::GovFixed {
+                contract,
+                min_stake_amount,
+                min_user_cap,
+                max_user_cap,
+            } => Self::GovFixed {
+                contract,
+                min_stake_amount,
+                min_user_cap,
+                max_user_cap,
+            },
+            CapStrategy::GovLinear {
+                contract,
+                cap_start,
+                cap_weight,
+                min_stake_amount,
+                max_stake_amount,
+            } => Self::GovLinear {
+                contract,
+                cap_start,
+                cap_weight,
+                min_stake_amount,
+                max_stake_amount,
+            },
+            CapStrategy::GovStaged { contract, stages } => Self::GovStaged { contract, stages },
+            CapStrategy::GovLinearStaged { contract, stages } => {
+                Self::GovLinearStaged { contract, stages }
+            }
         }
     }
 }

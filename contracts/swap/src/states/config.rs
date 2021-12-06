@@ -1,7 +1,6 @@
 use cosmwasm_std::{Addr, Decimal, StdResult, Storage, Uint128};
 use cosmwasm_storage::{ReadonlySingleton, Singleton};
 use cw20::Denom;
-use pylon_gateway::swap_msg::Strategy;
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 

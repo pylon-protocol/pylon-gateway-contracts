@@ -1,4 +1,4 @@
-use cosmwasm_std::{Addr, StdResult, Storage, Uint128};
+use cosmwasm_std::{StdResult, Storage, Uint128};
 use cosmwasm_storage::{ReadonlySingleton, Singleton};
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};

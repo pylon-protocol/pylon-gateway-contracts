@@ -10,13 +10,14 @@ fn to_response(
     querier: QuerierWrapper,
     config: &Config,
     user: &User,
+    whitelisted: bool,
     address: String,
     time: u64,
 ) -> UserResponse {
-    let claimable_token = calculate_claimable_tokens(&config, &user, time);
+    let claimable_token = calculate_claimable_tokens(config, user, time);
 
     UserResponse {
-        whitelisted: user.whitelisted,
+        whitelisted,
         swapped_in: user.swapped_in,
         available_cap: match config.deposit_cap_strategy.clone() {
             Some(strategy) => {
@@ -24,7 +25,7 @@ fn to_response(
                 if unlimited {
                     None
                 } else {
-                    cap
+                    Some(cap)
                 }
             }
             None => None,
@@ -37,12 +38,14 @@ fn to_response(
 pub fn query_user(deps: Deps, env: Env, address: String) -> super::QueryResult {
     let user_addr = deps.api.addr_canonicalize(address.as_str())?;
     let user = User::load(deps.storage, &user_addr);
+    let whitelisted = User::is_whitelisted(deps.storage, &user_addr);
     let config = Config::load(deps.storage)?;
 
     Ok(to_binary(&to_response(
         deps.querier,
         &config,
         &user,
+        whitelisted,
         address,
         env.block.time.seconds(),
     ))?)
@@ -65,6 +68,7 @@ pub fn query_users(
     )
     .iter()
     .map(|(user_addr, user)| -> (String, UserResponse) {
+        let whitelisted = User::is_whitelisted(deps.storage, user_addr);
         let user_addr = api.addr_humanize(user_addr).unwrap();
         (
             user_addr.to_string(),
@@ -72,6 +76,7 @@ pub fn query_users(
                 deps.querier,
                 &config,
                 user,
+                whitelisted,
                 user_addr.to_string(),
                 env.block.time.seconds(),
             ),

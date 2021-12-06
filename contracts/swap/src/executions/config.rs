@@ -8,6 +8,7 @@ use crate::states::config::Config;
 use crate::types::cap_strategy::CapStrategy;
 use crate::types::distribution_strategy::DistributionStrategy;
 
+#[allow(clippy::too_many_arguments)]
 pub fn update(
     deps: DepsMut,
     _env: Env,
@@ -41,7 +42,10 @@ pub fn update(
     config.deposit_cap_strategy = deposit_cap_strategy.map(CapStrategy::from);
 
     if let Some(v) = distribution_strategies {
-        config.distribution_strategies = v.iter().map(DistributionStrategy::from).collect();
+        config.distribution_strategies = v
+            .iter()
+            .map(|x| DistributionStrategy::from(x.clone()))
+            .collect();
     }
 
     if let Some(v) = whitelist_enabled {

@@ -1,18 +1,15 @@
 use cosmwasm_std::{
-    attr, to_binary, BankMsg, Coin, CosmosMsg, Decimal, DepsMut, Env, MessageInfo, Response,
-    StdResult, Uint128, WasmMsg,
+    attr, to_binary, BankMsg, Coin, CosmosMsg, Decimal, DepsMut, Env, Fraction, MessageInfo,
+    Response, Uint128, WasmMsg,
 };
 use cw20::{Cw20ExecuteMsg, Denom};
-use pylon_gateway::cap_strategy_msg::QueryMsg as CapQueryMsg;
-use pylon_gateway::cap_strategy_resp;
-use pylon_gateway::swap_msg::Strategy;
 use pylon_utils::tax::deduct_tax;
+use std::convert::TryFrom;
 
 use crate::error::ContractError;
 use crate::states::config::Config;
 use crate::states::state::State;
 use crate::states::user::User;
-use crate::types::distribution_strategy::DistributionStrategy;
 
 pub fn deposit(deps: DepsMut, env: Env, info: MessageInfo) -> super::ExecuteResult {
     let config = Config::load(deps.storage)?;
@@ -39,7 +36,7 @@ pub fn deposit(deps: DepsMut, env: Env, info: MessageInfo) -> super::ExecuteResu
         .funds
         .iter()
         .find(|c| c.denom == input_token_denom)
-        .map(|c| Uint128::from(c.amount))
+        .map(|c| c.amount)
         .unwrap_or_else(Uint128::zero);
     if swapped_in.is_zero() {
         return Err(ContractError::NotAllowZeroAmount {});
@@ -55,7 +52,7 @@ pub fn deposit(deps: DepsMut, env: Env, info: MessageInfo) -> super::ExecuteResu
     let mut state = State::load(deps.storage)?;
 
     // check whitelisted, or free to participate everyone
-    if config.whitelist_enabled && !user.whitelisted {
+    if config.whitelist_enabled && !User::is_whitelisted(deps.storage, sender) {
         return Err(ContractError::NotAllowNonWhitelisted {
             address: info.sender.to_string(),
         });
@@ -64,15 +61,13 @@ pub fn deposit(deps: DepsMut, env: Env, info: MessageInfo) -> super::ExecuteResu
     if let Some(strategy) = config.deposit_cap_strategy {
         let (amount, unlimited) =
             strategy.available_cap_of(deps.querier, info.sender.to_string(), user.swapped_in);
-        if !unlimited {
-            if swapped_in < amount {
-                return Err(ContractError::AvailableCapExceeded { available: amount });
-            }
+        if !unlimited && swapped_in < amount {
+            return Err(ContractError::AvailableCapExceeded { available: amount });
         }
     }
 
-    // check swap pool size
-    let swapped_out = swapped_in / config.price;
+    let swapped_out = swapped_in * Uint128::from(config.price.denominator())
+        / Uint128::from(config.price.numerator());
     if state.total_swapped + swapped_out > config.amount {
         return Err(ContractError::PoolSizeExceeded {
             available: config.amount - state.total_swapped,
@@ -107,9 +102,7 @@ pub fn withdraw(
     if config
         .distribution_strategies
         .iter()
-        .fold(true, |is_in_release_time, strategy| {
-            is_in_release_time && !strategy.check_release_time(&now)
-        })
+        .all(|strategy| !strategy.check_release_time(&now))
     {
         return Err(ContractError::NotAllowWithdrawAfterRelease {});
     }
@@ -128,18 +121,23 @@ pub fn withdraw(
         });
     }
 
-    let withdraw_amount = calculate_withdraw_amount(&state, &amount)?;
+    let withdraw_amount = calculate_withdraw_amount(&state, &amount);
     let penalty = (amount * config.price) - withdraw_amount;
 
-    user.swapped_out = user.swapped_out - amount;
-    user.swapped_in = user.swapped_in - (amount * config.price);
+    user.swapped_out -= amount;
+    user.swapped_in -= amount * config.price;
 
-    state.total_swapped = state.total_swapped - amount;
-    state.liq_x = state.liq_x - withdraw_amount;
-    state.liq_y += amount;
+    state.total_swapped -= amount;
+    state.x_liquidity -= withdraw_amount;
+    state.y_liquidity += amount;
 
     User::save(deps.storage, sender, &user)?;
     State::save(deps.storage, &state)?;
+
+    let input_token = match config.input_token {
+        Denom::Native(input_token) => input_token,
+        Denom::Cw20(_) => unreachable!("cw20 as input_token is not supported"),
+    };
 
     Ok(Response::new()
         .add_message(CosmosMsg::Bank(BankMsg::Send {
@@ -147,8 +145,8 @@ pub fn withdraw(
             amount: vec![deduct_tax(
                 deps.as_ref(),
                 Coin {
-                    denom: state.x_denom.clone(),
-                    amount: withdraw_amount.into(),
+                    denom: input_token.clone(),
+                    amount: withdraw_amount,
                 },
             )?],
         }))
@@ -157,8 +155,8 @@ pub fn withdraw(
             amount: vec![deduct_tax(
                 deps.as_ref(),
                 Coin {
-                    denom: state.x_denom,
-                    amount: penalty.into(),
+                    denom: input_token,
+                    amount: penalty,
                 },
             )?],
         }))
@@ -186,12 +184,17 @@ pub fn claim(deps: DepsMut, env: Env, info: MessageInfo) -> super::ExecuteResult
     User::save(deps.storage, sender, &user)?;
     State::save(deps.storage, &state)?;
 
+    let output_token = match config.output_token {
+        Denom::Native(_) => unreachable!("native as output_token is not supported"),
+        Denom::Cw20(output_token) => output_token,
+    };
+
     Ok(Response::new()
         .add_message(CosmosMsg::Wasm(WasmMsg::Execute {
-            contract_addr: state.y_addr.to_string(),
+            contract_addr: output_token.to_string(),
             msg: to_binary(&Cw20ExecuteMsg::Transfer {
                 recipient: info.sender.to_string(),
-                amount: claimable_token.into(),
+                amount: claimable_token,
             })?,
             funds: vec![],
         }))
@@ -205,7 +208,6 @@ pub fn claim(deps: DepsMut, env: Env, info: MessageInfo) -> super::ExecuteResult
 const EARN_LOCK_PERIOD: u64 = 86400 * 7;
 
 pub fn earn(deps: DepsMut, env: Env, info: MessageInfo) -> super::ExecuteResult {
-    let state = State::load(deps.storage)?;
     let config = Config::load(deps.storage)?;
     if config.beneficiary != info.sender {
         return Err(ContractError::Unauthorized {
@@ -219,13 +221,18 @@ pub fn earn(deps: DepsMut, env: Env, info: MessageInfo) -> super::ExecuteResult 
         return Err(ContractError::NotAllowEarnBeforeLockPeriod {});
     }
 
+    let input_token = match config.input_token {
+        Denom::Native(input_token) => input_token,
+        Denom::Cw20(_) => unreachable!("cw20 as input_token is not supported"),
+    };
+
     Ok(Response::new()
         .add_message(CosmosMsg::Bank(BankMsg::Send {
             to_address: config.beneficiary.to_string(),
             amount: vec![deduct_tax(
                 deps.as_ref(),
                 deps.querier
-                    .query_balance(env.contract.address, state.x_denom)
+                    .query_balance(env.contract.address, input_token)
                     .unwrap(),
             )?],
         }))
@@ -235,8 +242,7 @@ pub fn earn(deps: DepsMut, env: Env, info: MessageInfo) -> super::ExecuteResult 
 
 pub fn calculate_withdraw_amount(state: &State, dy: &Uint128) -> Uint128 {
     let k = state.x_liquidity * state.y_liquidity;
-    let dx = (state.x_liquidity + k) / (state.y_liquidity + *dy);
-    dx
+    (state.x_liquidity + k) / (state.y_liquidity + *dy)
 }
 
 pub fn calculate_current_price(state: &State) -> Decimal {
@@ -254,7 +260,7 @@ pub fn calculate_claimable_tokens(config: &Config, user: &User, time: u64) -> Ui
             )
         },
     );
-    if config.distribution_strategies.len() == count {
+    if u64::try_from(config.distribution_strategies.len()).unwrap() == count {
         ratio = Decimal::one();
     }
 

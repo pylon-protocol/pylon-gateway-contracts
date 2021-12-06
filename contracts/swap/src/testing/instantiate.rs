@@ -1,14 +1,11 @@
-use crate::constants::{CONTRACT_NAME, CONTRACT_VERSION};
 use cosmwasm_std::testing::{mock_env, mock_info};
-use cosmwasm_std::{
-    to_binary, Addr, Api, CosmosMsg, Decimal, Env, MessageInfo, ReplyOn, Response, SubMsg, Uint128,
-    WasmMsg,
-};
+use cosmwasm_std::{Api, Decimal, Env, MessageInfo, Response, Uint128};
 use cw2::{get_contract_version, ContractVersion};
 use cw20::Denom;
 use pylon_gateway::swap_msg::InstantiateMsg;
 use pylon_gateway::swap_types::DistributionStrategy as SwapDistributionStrategy;
 
+use crate::constants::{CONTRACT_NAME, CONTRACT_VERSION};
 use crate::entrypoints::instantiate;
 use crate::executions::ExecuteResult;
 use crate::states::config::Config;
@@ -61,7 +58,7 @@ pub fn default_msg() -> InstantiateMsg {
 fn success() {
     let mut deps = mock_deps();
 
-    let (env, info, resp) = default(&mut deps);
+    let (env, _info, resp) = default(&mut deps);
     assert_eq!(resp, Response::default());
 
     let api = deps.api;

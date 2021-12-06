@@ -8,13 +8,14 @@ pub fn whitelist(
     whitelist: bool,
     candidates: Vec<String>,
 ) -> super::ExecuteResult {
+    let api = deps.api;
+    let storage = deps.storage;
     candidates
         .iter()
-        .map(|x| deps.api.addr_canonicalize(x.as_str()).unwrap())
-        .for_each(|candidate| {
-            let mut user = User::load(deps.storage, &candidate);
-            user.whitelisted = whitelist;
-            User::save(deps.storage, &candidate, &user).unwrap();
+        .map(|x| api.addr_canonicalize(x.as_str()).unwrap())
+        .for_each(|candidate| match whitelist {
+            true => User::register_whitelist(storage, &candidate).unwrap(),
+            false => User::unregister_whitelist(storage, &candidate).unwrap(),
         });
 
     Ok(Response::new().add_attributes(vec![attr("action", "whitelist_user")]))

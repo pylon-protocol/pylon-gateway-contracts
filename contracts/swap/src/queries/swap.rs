@@ -34,7 +34,7 @@ pub fn query_simulate_withdraw(
     }
 
     let input_denom = match config.input_token {
-        Denom::Native(token) => token.to_string(),
+        Denom::Native(token) => token,
         Denom::Cw20(_) => panic!("input token should be native"),
     };
 

@@ -1,7 +1,7 @@
 #[cfg(not(feature = "library"))]
 use cosmwasm_std::entry_point;
 
-use cosmwasm_std::{Binary, Deps, DepsMut, Env, MessageInfo, Response, StdResult, Uint128};
+use cosmwasm_std::{Binary, Deps, DepsMut, Env, MessageInfo, Response, Uint128};
 use cw2::set_contract_version;
 use cw20::Denom;
 use pylon_gateway::swap_msg::{ConfigureMsg, ExecuteMsg, InstantiateMsg, MigrateMsg, QueryMsg};
@@ -40,7 +40,7 @@ pub fn instantiate(
             distribution_strategies: msg
                 .distribution_strategies
                 .iter()
-                .map(|x| DistributionStrategy::from(*x))
+                .map(|x| DistributionStrategy::from(x.clone()))
                 .collect(),
             whitelist_enabled: msg.whitelist_enabled,
         },
@@ -121,6 +121,7 @@ pub fn execute(
 pub fn query(deps: Deps, env: Env, msg: QueryMsg) -> Result<Binary, ContractError> {
     match msg {
         QueryMsg::Config {} => queries::config::query_config(deps, env),
+        QueryMsg::ConfigV2 {} => queries::config::query_config_v2(deps, env),
         QueryMsg::State {} => queries::state::query_state(deps, env),
         QueryMsg::User { address } => queries::user::query_user(deps, env, address),
         QueryMsg::Users {
@@ -140,8 +141,12 @@ pub fn query(deps: Deps, env: Env, msg: QueryMsg) -> Result<Binary, ContractErro
 pub fn migrate(deps: DepsMut, env: Env, msg: MigrateMsg) -> Result<Response, ContractError> {
     match msg {
         MigrateMsg::Pylon {} => migrations::pylon::migrate(deps, env),
-        MigrateMsg::Nexus {} => migrations::nexus::migrate(deps, env),
-        MigrateMsg::Valkyrie {} => migrations::valkyrie::migrate(deps, env),
+        MigrateMsg::Nexus {
+            deposit_cap_strategy,
+        } => migrations::nexus::migrate(deps, env, deposit_cap_strategy),
+        MigrateMsg::Valkyrie {
+            deposit_cap_strategy,
+        } => migrations::valkyrie::migrate(deps, env, deposit_cap_strategy),
         MigrateMsg::General {} => Ok(Response::default()),
     }
 }

@@ -1,6 +1,5 @@
 use cosmwasm_std::{attr, DepsMut, Env, MessageInfo, Response, Uint128};
 
-use crate::states::config::Config;
 use crate::states::state::State;
 
 pub fn update(

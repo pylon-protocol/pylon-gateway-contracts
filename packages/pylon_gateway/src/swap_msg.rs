@@ -57,6 +57,7 @@ pub enum ExecuteMsg {
 #[serde(rename_all = "snake_case")]
 pub enum QueryMsg {
     Config {},
+    ConfigV2 {},
     State {},
     User {
         address: String,
@@ -78,7 +79,11 @@ pub enum QueryMsg {
 #[serde(rename_all = "snake_case")]
 pub enum MigrateMsg {
     Pylon {},
-    Nexus {},
-    Valkyrie {},
+    Nexus {
+        deposit_cap_strategy: Option<CapStrategy>,
+    },
+    Valkyrie {
+        deposit_cap_strategy: Option<CapStrategy>,
+    },
     General {},
 }
