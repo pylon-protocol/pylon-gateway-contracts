@@ -66,7 +66,7 @@ pub fn migrate(
             input_token: Denom::Native(legacy_state.x_denom),
             output_token: Denom::Cw20(api.addr_validate(legacy_state.y_addr.as_str())?),
 
-            deposit_cap_strategy: deposit_cap_strategy.map(|x| x.into),
+            deposit_cap_strategy: deposit_cap_strategy.map(|x| x.into()),
             distribution_strategies: legacy_config
                 .distribution_strategy
                 .iter()
