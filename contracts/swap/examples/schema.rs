@@ -1,12 +1,11 @@
+use cosmwasm_schema::{export_schema, remove_schemas, schema_for};
 use std::env::current_dir;
 use std::fs::create_dir_all;
 
-use cosmwasm_schema::{export_schema, remove_schemas, schema_for};
+use pylon_gateway::swap_msg::{ExecuteMsg, InstantiateMsg, QueryMsg};
 use pylon_gateway_swap::states::config::Config;
 use pylon_gateway_swap::states::state::State;
 use pylon_gateway_swap::states::user::User;
-
-use pylon_gateway::swap_msg::{ExecuteMsg, InstantiateMsg, QueryMsg};
 
 fn main() {
     let mut out_dir = current_dir().unwrap();

@@ -1,73 +1,77 @@
 {
   "$schema": "http://json-schema.org/draft-07/schema#",
-  "title": "Config",
-  "type": "object",
-  "required": [
-    "amount",
-    "beneficiary",
-    "distribution_strategies",
-    "finish",
-    "input_token",
-    "output_token",
-    "owner",
-    "price",
-    "start",
-    "whitelist_enabled"
-  ],
-  "properties": {
-    "amount": {
-      "$ref": "#/definitions/Uint128"
-    },
-    "beneficiary": {
-      "$ref": "#/definitions/Addr"
-    },
-    "deposit_cap_strategy": {
-      "anyOf": [
-        {
-          "$ref": "#/definitions/CapStrategy"
-        },
-        {
-          "type": "null"
+  "title": "ExecuteMsg",
+  "oneOf": [
+    {
+      "type": "object",
+      "required": [
+        "configure"
+      ],
+      "properties": {
+        "configure": {
+          "$ref": "#/definitions/ConfigureMsg"
         }
-      ]
+      },
+      "additionalProperties": false
     },
-    "distribution_strategies": {
-      "type": "array",
-      "items": {
-        "$ref": "#/definitions/DistributionStrategy"
-      }
+    {
+      "type": "object",
+      "required": [
+        "deposit"
+      ],
+      "properties": {
+        "deposit": {
+          "type": "object"
+        }
+      },
+      "additionalProperties": false
     },
-    "finish": {
-      "type": "integer",
-      "format": "uint64",
-      "minimum": 0.0
+    {
+      "type": "object",
+      "required": [
+        "withdraw"
+      ],
+      "properties": {
+        "withdraw": {
+          "type": "object",
+          "required": [
+            "amount"
+          ],
+          "properties": {
+            "amount": {
+              "$ref": "#/definitions/Uint128"
+            }
+          }
+        }
+      },
+      "additionalProperties": false
     },
-    "input_token": {
-      "$ref": "#/definitions/Denom"
+    {
+      "type": "object",
+      "required": [
+        "claim"
+      ],
+      "properties": {
+        "claim": {
+          "type": "object"
+        }
+      },
+      "additionalProperties": false
     },
-    "output_token": {
-      "$ref": "#/definitions/Denom"
-    },
-    "owner": {
-      "$ref": "#/definitions/Addr"
-    },
-    "price": {
-      "$ref": "#/definitions/Decimal"
-    },
-    "start": {
-      "type": "integer",
-      "format": "uint64",
-      "minimum": 0.0
-    },
-    "whitelist_enabled": {
-      "type": "boolean"
+    {
+      "type": "object",
+      "required": [
+        "earn"
+      ],
+      "properties": {
+        "earn": {
+          "type": "object"
+        }
+      },
+      "additionalProperties": false
     }
-  },
+  ],
   "definitions": {
-    "Addr": {
-      "description": "A human readable address.\n\nIn Cosmos, this is typically bech32 encoded. But for multi-chain smart contracts no assumptions should be made other than being UTF-8 encoded and of reasonable length.\n\nThis type represents a validated address. It can be created in the following ways 1. Use `Addr::unchecked(input)` 2. Use `let checked: Addr = deps.api.addr_validate(input)?` 3. Use `let checked: Addr = deps.api.addr_humanize(canonical_addr)?` 4. Deserialize from JSON. This must only be done from JSON that was validated before such as a contract's state. `Addr` must not be used in messages sent by the user because this would result in unvalidated instances.\n\nThis type is immutable. If you really need to mutate it (Really? Are you sure?), create a mutable copy using `let mut mutable = Addr::to_string()` and operate on that `String` instance.",
-      "type": "string"
-    },
     "CapStrategy": {
       "oneOf": [
         {
@@ -309,20 +313,67 @@
         }
       ]
     },
-    "Decimal": {
-      "description": "A fixed-point decimal value with 18 fractional digits, i.e. Decimal(1_000_000_000_000_000_000) == 1.0\n\nThe greatest possible value that can be represented is 340282366920938463463.374607431768211455 (which is (2^128 - 1) / 10^18)",
-      "type": "string"
-    },
-    "Denom": {
+    "ConfigureMsg": {
       "oneOf": [
         {
           "type": "object",
           "required": [
-            "native"
+            "config"
           ],
           "properties": {
-            "native": {
-              "type": "string"
+            "config": {
+              "type": "object",
+              "properties": {
+                "beneficiary": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "deposit_cap_strategy": {
+                  "anyOf": [
+                    {
+                      "$ref": "#/definitions/CapStrategy"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "distribution_strategies": {
+                  "type": [
+                    "array",
+                    "null"
+                  ],
+                  "items": {
+                    "$ref": "#/definitions/DistributionStrategy"
+                  }
+                },
+                "input_token": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "output_token": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "owner": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "whitelist_enabled": {
+                  "type": [
+                    "boolean",
+                    "null"
+                  ]
+                }
+              }
             }
           },
           "additionalProperties": false
@@ -330,16 +381,69 @@
         {
           "type": "object",
           "required": [
-            "cw20"
+            "state"
           ],
           "properties": {
-            "cw20": {
-              "$ref": "#/definitions/Addr"
+            "state": {
+              "type": "object",
+              "properties": {
+                "x_liquidity": {
+                  "anyOf": [
+                    {
+                      "$ref": "#/definitions/Uint128"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "y_liquidity": {
+                  "anyOf": [
+                    {
+                      "$ref": "#/definitions/Uint128"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "required": [
+            "whitelist"
+          ],
+          "properties": {
+            "whitelist": {
+              "type": "object",
+              "required": [
+                "candidates",
+                "whitelist"
+              ],
+              "properties": {
+                "candidates": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                },
+                "whitelist": {
+                  "type": "boolean"
+                }
+              }
             }
           },
           "additionalProperties": false
         }
       ]
+    },
+    "Decimal": {
+      "description": "A fixed-point decimal value with 18 fractional digits, i.e. Decimal(1_000_000_000_000_000_000) == 1.0\n\nThe greatest possible value that can be represented is 340282366920938463463.374607431768211455 (which is (2^128 - 1) / 10^18)",
+      "type": "string"
     },
     "DistributionStrategy": {
       "oneOf": [
