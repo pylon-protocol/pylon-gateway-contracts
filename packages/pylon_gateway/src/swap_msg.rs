@@ -46,7 +46,7 @@ pub enum ConfigureMsg {
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
 #[serde(rename_all = "snake_case")]
 pub enum ExecuteMsg {
-    Configure(ConfigureMsg),
+    Configure(Box<ConfigureMsg>),
     Deposit {},
     Withdraw { amount: Uint128 },
     Claim {},

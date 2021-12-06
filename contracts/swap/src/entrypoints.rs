@@ -78,7 +78,7 @@ pub fn execute(
                 });
             }
 
-            match cfg_msg {
+            match *cfg_msg {
                 ConfigureMsg::Config {
                     owner,
                     beneficiary,
