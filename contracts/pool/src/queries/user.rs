@@ -1,8 +1,9 @@
 use cosmwasm_bignumber::Uint256;
 use cosmwasm_std::{to_binary, Deps, Env};
-use pylon_gateway::cap_strategy_msg::QueryMsg;
 use pylon_gateway::pool_resp;
 use pylon_utils::common::OrderBy;
+use schemars::JsonSchema;
+use serde::{Deserialize, Serialize};
 use std::cmp::{max, min};
 
 use crate::executions::staking::calculate_rewards;
@@ -43,15 +44,27 @@ pub fn query_claimable_reward(
     })?)
 }
 
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
+#[serde(rename_all = "snake_case")]
+pub enum CapStrategyQueryMsg {
+    AvailableCapOf { address: String, amount: Uint256 },
+}
+
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
+pub struct AvailableCapResponse {
+    pub amount: Option<Uint256>,
+    pub unlimited: bool,
+}
+
 pub fn query_available_cap(deps: Deps, _env: Env, address: String) -> super::QueryResult {
     let config = Config::load(deps.storage)?;
     let user_addr = deps.api.addr_canonicalize(address.as_str())?;
     let user = User::load(deps.storage, &user_addr);
 
     if let Some(strategy) = config.deposit_cap_strategy {
-        let resp: pool_resp::AvailableCapOfResponse = deps.querier.query_wasm_smart(
+        let resp: AvailableCapResponse = deps.querier.query_wasm_smart(
             strategy.to_string(),
-            &QueryMsg::AvailableCapOf {
+            &CapStrategyQueryMsg::AvailableCapOf {
                 address,
                 amount: Uint256::from(user.amount),
             },

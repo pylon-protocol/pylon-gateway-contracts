@@ -1,20 +1,24 @@
 {
   "$schema": "http://json-schema.org/draft-07/schema#",
-  "title": "User",
+  "title": "State",
   "type": "object",
   "required": [
-    "swapped_in",
-    "swapped_out",
-    "swapped_out_claimed"
+    "total_claimed",
+    "total_swapped",
+    "x_liquidity",
+    "y_liquidity"
   ],
   "properties": {
-    "swapped_in": {
+    "total_claimed": {
       "$ref": "#/definitions/Uint128"
     },
-    "swapped_out": {
+    "total_swapped": {
       "$ref": "#/definitions/Uint128"
     },
-    "swapped_out_claimed": {
+    "x_liquidity": {
+      "$ref": "#/definitions/Uint128"
+    },
+    "y_liquidity": {
       "$ref": "#/definitions/Uint128"
     }
   },
