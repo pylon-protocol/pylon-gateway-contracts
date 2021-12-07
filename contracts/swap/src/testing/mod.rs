@@ -1,5 +1,5 @@
 use cosmwasm_std::testing::{mock_env, MockApi, MockStorage};
-use cosmwasm_std::{Env, OwnedDeps, Timestamp};
+use cosmwasm_std::{Coin, Env, OwnedDeps, Timestamp};
 
 use crate::testing::mock_querier::{mock_dependencies, CustomMockWasmQuerier};
 
@@ -20,6 +20,10 @@ type MockDeps = OwnedDeps<MockStorage, MockApi, CustomMockWasmQuerier>;
 
 fn mock_deps() -> MockDeps {
     mock_dependencies(&[])
+}
+
+fn mock_deps_with_balance(coins: &[Coin]) -> MockDeps {
+    mock_dependencies(coins)
 }
 
 #[allow(dead_code)]

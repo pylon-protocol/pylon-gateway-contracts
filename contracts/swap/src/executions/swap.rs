@@ -1,3 +1,4 @@
+use crate::constants::EARN_LOCK_PERIOD;
 use cosmwasm_std::{
     attr, to_binary, BankMsg, Coin, CosmosMsg, Decimal, DepsMut, Env, Fraction, MessageInfo,
     Response, Uint128, WasmMsg,
@@ -207,8 +208,6 @@ pub fn claim(deps: DepsMut, env: Env, info: MessageInfo) -> super::ExecuteResult
             attr("amount", claimable_token.to_string()),
         ]))
 }
-
-const EARN_LOCK_PERIOD: u64 = 86400 * 7;
 
 pub fn earn(deps: DepsMut, env: Env, info: MessageInfo) -> super::ExecuteResult {
     let config = Config::load(deps.storage)?;
