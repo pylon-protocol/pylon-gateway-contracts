@@ -1,5 +1,7 @@
-use cosmwasm_std::{CanonicalAddr, Decimal, DepsMut, Env, Order, Response, Uint128};
-use cosmwasm_storage::{ReadonlyBucket, ReadonlySingleton};
+use cosmwasm_std::{
+    CanonicalAddr, Decimal, DepsMut, Env, Order, Response, StdResult, Storage, Uint128,
+};
+use cosmwasm_storage::{Bucket, ReadonlyBucket, ReadonlySingleton, Singleton};
 use cw20::Denom;
 use pylon_gateway::swap_types;
 use schemars::JsonSchema;
@@ -8,8 +10,11 @@ use serde::{Deserialize, Serialize};
 use crate::states::config::Config;
 use crate::states::state::State;
 use crate::states::user::User;
-use crate::states::{KEY_CONFIG, KEY_STATE, PREFIX_USER};
 use crate::types::distribution_strategy::DistributionStrategy;
+
+static KEY_STATE: &[u8] = b"state";
+static KEY_CONFIG: &[u8] = b"config";
+static PREFIX_USER: &[u8] = b"user";
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
 pub struct LegacyConfig {
@@ -24,6 +29,16 @@ pub struct LegacyConfig {
     pub swap_pool_size: Uint128,
 }
 
+impl LegacyConfig {
+    pub fn load(storage: &dyn Storage) -> StdResult<Self> {
+        ReadonlySingleton::<Self>::new(storage, KEY_CONFIG).load()
+    }
+
+    pub fn save(storage: &mut dyn Storage, data: &Self) -> StdResult<()> {
+        Singleton::<Self>::new(storage, KEY_CONFIG).save(data)
+    }
+}
+
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
 pub struct LegacyState {
     pub total_swapped: Uint128,
@@ -35,12 +50,44 @@ pub struct LegacyState {
     pub liq_y: Uint128,
 }
 
+impl LegacyState {
+    pub fn load(storage: &dyn Storage) -> StdResult<Self> {
+        ReadonlySingleton::<Self>::new(storage, KEY_STATE).load()
+    }
+
+    pub fn save(storage: &mut dyn Storage, data: &Self) -> StdResult<()> {
+        Singleton::<Self>::new(storage, KEY_STATE).save(data)
+    }
+}
+
 #[derive(Serialize, Deserialize, Default, Clone, Debug, PartialEq, JsonSchema)]
 pub struct LegacyUser {
     pub whitelisted: bool,
     pub swapped_in: Uint128,
     pub swapped_out: Uint128,
     pub swapped_out_claimed: Uint128,
+}
+
+impl LegacyUser {
+    pub fn load(storage: &dyn Storage, owner: &CanonicalAddr) -> Self {
+        ReadonlyBucket::<Self>::new(storage, PREFIX_USER)
+            .load(owner.as_slice())
+            .unwrap_or_default()
+    }
+
+    pub fn load_range(storage: &dyn Storage) -> Vec<(CanonicalAddr, Self)> {
+        ReadonlyBucket::<Self>::new(storage, PREFIX_USER)
+            .range(None, None, Order::Ascending)
+            .map(|item| -> (CanonicalAddr, Self) {
+                let (k, v) = item.unwrap();
+                (CanonicalAddr::from(k.as_slice()), v)
+            })
+            .collect()
+    }
+
+    pub fn save(storage: &mut dyn Storage, owner: &CanonicalAddr, user: &Self) -> StdResult<()> {
+        Bucket::<Self>::new(storage, PREFIX_USER).save(owner.as_slice(), user)
+    }
 }
 
 pub fn migrate(
@@ -50,8 +97,8 @@ pub fn migrate(
 ) -> super::MigrateResult {
     let api = deps.api;
     let storage = deps.storage;
-    let legacy_config = ReadonlySingleton::<LegacyConfig>::new(storage, KEY_CONFIG).load()?;
-    let legacy_state = ReadonlySingleton::<LegacyState>::new(storage, KEY_STATE).load()?;
+    let legacy_config = LegacyConfig::load(storage)?;
+    let legacy_state = LegacyState::load(storage)?;
 
     Config::save(
         storage,
@@ -87,16 +134,7 @@ pub fn migrate(
         },
     )?;
 
-    let legacy_user: Vec<(CanonicalAddr, LegacyUser)> =
-        ReadonlyBucket::<LegacyUser>::new(storage, PREFIX_USER)
-            .range(None, None, Order::Descending)
-            .map(|item| -> (CanonicalAddr, LegacyUser) {
-                let (addr, user) = item.unwrap();
-                (CanonicalAddr::from(addr), user)
-            })
-            .collect();
-
-    for (owner, user) in legacy_user.iter() {
+    for (owner, user) in LegacyUser::load_range(storage).iter() {
         User::save(
             storage,
             owner,

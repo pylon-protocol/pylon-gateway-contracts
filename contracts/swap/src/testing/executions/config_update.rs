@@ -11,6 +11,7 @@ use crate::states::config::Config;
 use crate::testing::{instantiate, mock_deps, MockDeps, TEST_OWNER, TEST_USER_1, TEST_USER_2};
 use crate::types::cap_strategy::CapStrategy;
 
+#[allow(clippy::too_many_arguments)]
 pub fn exec(
     deps: &mut MockDeps,
     env: Env,

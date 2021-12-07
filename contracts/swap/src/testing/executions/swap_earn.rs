@@ -6,7 +6,6 @@ use crate::constants::EARN_LOCK_PERIOD;
 use crate::entrypoints::execute;
 use crate::error::ContractError;
 use crate::executions::ExecuteResult;
-use crate::testing::instantiate::default_msg;
 use crate::testing::{
     instantiate, mock_deps, mock_deps_with_balance, MockDeps, TEST_BENEFICIARY, TEST_OWNER,
 };

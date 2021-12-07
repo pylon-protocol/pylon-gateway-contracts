@@ -64,13 +64,19 @@ impl User {
         owner: &CanonicalAddr,
         whitelisted: bool,
     ) -> StdResult<()> {
-        Bucket::<bool>::multilevel(storage, &[super::PREFIX_USER, super::PREFIX_WHITELIST])
-            .save(owner.as_slice(), &whitelisted)
+        Bucket::<bool>::multilevel(
+            storage,
+            &[super::PREFIX_USER_INDEX, super::PREFIX_WHITELIST],
+        )
+        .save(owner.as_slice(), &whitelisted)
     }
 
     pub fn is_whitelisted(storage: &dyn Storage, owner: &CanonicalAddr) -> bool {
-        ReadonlyBucket::<bool>::multilevel(storage, &[super::PREFIX_USER, super::PREFIX_WHITELIST])
-            .load(owner.as_slice())
-            .unwrap_or_default()
+        ReadonlyBucket::<bool>::multilevel(
+            storage,
+            &[super::PREFIX_USER_INDEX, super::PREFIX_WHITELIST],
+        )
+        .load(owner.as_slice())
+        .unwrap_or_default()
     }
 }
