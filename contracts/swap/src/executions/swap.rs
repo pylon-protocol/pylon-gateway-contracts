@@ -1,4 +1,3 @@
-use crate::constants::EARN_LOCK_PERIOD;
 use cosmwasm_std::{
     attr, to_binary, BankMsg, Coin, CosmosMsg, Decimal, DepsMut, Env, Fraction, MessageInfo,
     Response, Uint128, WasmMsg,
@@ -7,6 +6,7 @@ use cw20::{Cw20ExecuteMsg, Denom};
 use pylon_utils::tax::deduct_tax;
 use std::convert::TryFrom;
 
+use crate::constants::EARN_LOCK_PERIOD;
 use crate::error::ContractError;
 use crate::states::config::Config;
 use crate::states::state::State;
