@@ -61,7 +61,7 @@ pub fn deposit(deps: DepsMut, env: Env, info: MessageInfo) -> super::ExecuteResu
     if let Some(strategy) = config.deposit_cap_strategy {
         let (amount, unlimited) =
             strategy.available_cap_of(deps.querier, info.sender.to_string(), user.swapped_in);
-        if !unlimited && swapped_in < amount {
+        if !unlimited && swapped_in > amount {
             return Err(ContractError::AvailableCapExceeded { available: amount });
         }
     }
@@ -115,7 +115,10 @@ pub fn withdraw(
         return Err(ContractError::NotAllowWithdrawAfterClaim {});
     }
 
-    if user.swapped_in < amount * config.price {
+    if user.swapped_in * Uint128::from(config.price.denominator())
+        / Uint128::from(config.price.numerator())
+        < amount
+    {
         return Err(ContractError::WithdrawAmountExceeded {
             available: user.swapped_in,
         });
@@ -242,7 +245,7 @@ pub fn earn(deps: DepsMut, env: Env, info: MessageInfo) -> super::ExecuteResult 
 
 pub fn calculate_withdraw_amount(state: &State, dy: &Uint128) -> Uint128 {
     let k = state.x_liquidity * state.y_liquidity;
-    (state.x_liquidity + k) / (state.y_liquidity + *dy)
+    state.x_liquidity - (k / (state.y_liquidity + *dy))
 }
 
 pub fn calculate_current_price(state: &State) -> Decimal {

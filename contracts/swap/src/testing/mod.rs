@@ -1,7 +1,7 @@
 use cosmwasm_std::testing::{mock_env, MockApi, MockStorage};
 use cosmwasm_std::{Env, OwnedDeps, Timestamp};
 
-use crate::testing::mock_querier::{mock_dependencies, WasmMockQuerier};
+use crate::testing::mock_querier::{mock_dependencies, CustomMockWasmQuerier};
 
 mod executions;
 mod instantiate;
@@ -16,7 +16,7 @@ const TEST_USER_2: &str = "terra17lmam6zguazs5q5u6z5mmx76uj63gldnse2pdp";
 const TEST_INPUT_TOKEN: &str = "uusd";
 const TEST_OUTPUT_TOKEN: &str = "terra17tv2hvwpg0ukqgd2y5ct2w54fyan7z0zxrm2f9";
 
-type MockDeps = OwnedDeps<MockStorage, MockApi, WasmMockQuerier>;
+type MockDeps = OwnedDeps<MockStorage, MockApi, CustomMockWasmQuerier>;
 
 fn mock_deps() -> MockDeps {
     mock_dependencies(&[])

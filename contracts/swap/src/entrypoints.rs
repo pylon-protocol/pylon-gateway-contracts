@@ -72,7 +72,12 @@ pub fn execute(
             let config = Config::load(deps.storage)?;
             if config.owner != info.sender {
                 return Err(ContractError::Unauthorized {
-                    action: stringify!(cfg_msg).to_string(),
+                    action: match *cfg_msg {
+                        ConfigureMsg::Config { .. } => "update_config",
+                        ConfigureMsg::State { .. } => "update_state",
+                        ConfigureMsg::Whitelist { .. } => "whitelist",
+                    }
+                    .to_string(),
                     expected: config.owner.to_string(),
                     actual: info.sender.to_string(),
                 });

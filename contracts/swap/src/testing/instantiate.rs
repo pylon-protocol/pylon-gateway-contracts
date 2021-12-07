@@ -3,7 +3,7 @@ use cosmwasm_std::{Api, Decimal, Env, MessageInfo, Response, Uint128};
 use cw2::{get_contract_version, ContractVersion};
 use cw20::Denom;
 use pylon_gateway::swap_msg::InstantiateMsg;
-use pylon_gateway::swap_types::DistributionStrategy as SwapDistributionStrategy;
+use pylon_gateway::swap_types;
 
 use crate::constants::{CONTRACT_NAME, CONTRACT_VERSION};
 use crate::entrypoints::instantiate;
@@ -38,7 +38,7 @@ pub fn default_msg() -> InstantiateMsg {
     InstantiateMsg {
         beneficiary: TEST_BENEFICIARY.to_string(),
         start: default_blocktime,
-        period: default_blocktime + 100,
+        period: 100,
         price: Decimal::from_ratio(1u128, 10u128),
         amount: Uint128::from(10000u128),
         input_token: TEST_INPUT_TOKEN.to_string(),
@@ -46,7 +46,7 @@ pub fn default_msg() -> InstantiateMsg {
         x_liquidity: Uint128::from(10000u128),
         y_liquidity: Uint128::from(100000u128),
         deposit_cap_strategy: None,
-        distribution_strategies: vec![SwapDistributionStrategy::Lockup {
+        distribution_strategies: vec![swap_types::DistributionStrategy::Lockup {
             release_time: default_blocktime + 100,
             release_amount: Decimal::one(),
         }],

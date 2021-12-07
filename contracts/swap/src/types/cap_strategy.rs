@@ -113,7 +113,13 @@ impl CapStrategy {
         }
 
         match max_user_cap {
-            Some(cap) => (cap - amount, false),
+            Some(cap) => {
+                if cap < amount {
+                    ERROR
+                } else {
+                    (cap - amount, false)
+                }
+            }
             None => UNLIMITED,
         }
     }
