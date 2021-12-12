@@ -13,23 +13,30 @@ pub struct ConfigResponse {
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
-pub struct StateResponse {
-    pub total_swapped: Uint128, // total supply
-    pub total_claimed: Uint128,
+pub struct BalanceOfResponse {
+    pub amount: Uint128,
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
-pub struct UserResponse {
+pub struct IsWhitelistedResponse {
     pub whitelisted: bool,
-    pub swapped_in: Uint128,
-    pub available_cap: Option<Uint128>, // None = unlimited
-    pub reward_total: Uint128,
-    pub reward_remaining: Uint128,
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
-pub struct UsersResponse {
-    pub users: Vec<(String, UserResponse)>,
+pub struct AvailableCapOfResponse {
+    pub amount: Option<Uint128>,
+    pub unlimited: bool,
+}
+
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
+pub struct ClaimableTokenOfResponse {
+    pub amount: Uint128,
+    pub remaining: Uint128,
+}
+
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
+pub struct TotalSupplyResponse {
+    pub amount: Uint128,
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]

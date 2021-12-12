@@ -56,7 +56,23 @@ pub enum ExecuteMsg {
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
 #[serde(rename_all = "snake_case")]
 pub enum QueryMsg {
+    // v1 - will be deprecated
     Config {},
+    BalanceOf {
+        owner: String,
+    },
+    IsWhitelisted {
+        address: String,
+    },
+    AvailableCapOf {
+        address: String,
+    },
+    ClaimableTokenOf {
+        address: String,
+    },
+    TotalSupply {},
+
+    // v2
     ConfigV2 {},
     State {},
     User {
@@ -67,6 +83,8 @@ pub enum QueryMsg {
         limit: Option<u32>,
         order: Option<OrderBy>,
     },
+
+    // common
     CurrentPrice {},
     SimulateWithdraw {
         amount: Uint128,

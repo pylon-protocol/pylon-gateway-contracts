@@ -125,7 +125,21 @@ pub fn execute(
 #[cfg_attr(not(feature = "library"), entry_point)]
 pub fn query(deps: Deps, env: Env, msg: QueryMsg) -> Result<Binary, ContractError> {
     match msg {
+        // v1
         QueryMsg::Config {} => queries::config::query_config(deps, env),
+        QueryMsg::BalanceOf { owner } => queries::user::query_balance_of(deps, env, owner),
+        QueryMsg::IsWhitelisted { address } => {
+            queries::user::query_is_whitelisted(deps, env, address)
+        }
+        QueryMsg::AvailableCapOf { address } => {
+            queries::user::query_available_cap_of(deps, env, address)
+        }
+        QueryMsg::ClaimableTokenOf { address } => {
+            queries::user::query_claimable_token_of(deps, env, address)
+        }
+        QueryMsg::TotalSupply {} => queries::state::query_total_supply(deps, env),
+
+        // v2
         QueryMsg::ConfigV2 {} => queries::config::query_config_v2(deps, env),
         QueryMsg::State {} => queries::state::query_state(deps, env),
         QueryMsg::User { address } => queries::user::query_user(deps, env, address),
@@ -134,6 +148,8 @@ pub fn query(deps: Deps, env: Env, msg: QueryMsg) -> Result<Binary, ContractErro
             limit,
             order,
         } => queries::user::query_users(deps, env, start_after, limit, order),
+
+        // common
         QueryMsg::CurrentPrice {} => queries::swap::query_current_price(deps),
         QueryMsg::SimulateWithdraw { amount, address } => {
             queries::swap::query_simulate_withdraw(deps, address, amount)

@@ -1,5 +1,8 @@
 use cosmwasm_std::{to_binary, Deps, Env, QuerierWrapper};
-use pylon_gateway::swap_resp::{UserResponse, UsersResponse};
+use pylon_gateway::swap_resp::{
+    AvailableCapOfResponse, BalanceOfResponse, ClaimableTokenOfResponse, IsWhitelistedResponse,
+};
+use pylon_gateway::swap_resp_v2::{UserResponse, UsersResponse};
 use pylon_utils::common::OrderBy;
 
 use crate::executions::swap::calculate_claimable_tokens;
@@ -85,4 +88,54 @@ pub fn query_users(
     .collect();
 
     Ok(to_binary(&UsersResponse { users })?)
+}
+
+pub fn query_balance_of(deps: Deps, _env: Env, address: String) -> super::QueryResult {
+    let user_addr = deps.api.addr_canonicalize(address.as_str())?;
+    let user = User::load(deps.storage, &user_addr);
+
+    Ok(to_binary(&BalanceOfResponse {
+        amount: user.swapped_in,
+    })?)
+}
+
+pub fn query_is_whitelisted(deps: Deps, _env: Env, address: String) -> super::QueryResult {
+    let user_addr = deps.api.addr_canonicalize(address.as_str())?;
+    let whitelisted = User::is_whitelisted(deps.storage, &user_addr);
+
+    Ok(to_binary(&IsWhitelistedResponse { whitelisted })?)
+}
+
+pub fn query_available_cap_of(deps: Deps, _env: Env, address: String) -> super::QueryResult {
+    let user_addr = deps.api.addr_canonicalize(address.as_str())?;
+    let user = User::load(deps.storage, &user_addr);
+    let config = Config::load(deps.storage)?;
+
+    let querier = deps.querier;
+    let available_cap = match config.deposit_cap_strategy {
+        Some(strategy) => {
+            let (cap, unlimited) = strategy.available_cap_of(querier, address, user.swapped_in);
+            if unlimited {
+                None
+            } else {
+                Some(cap)
+            }
+        }
+        None => None,
+    };
+
+    Ok(to_binary(&AvailableCapOfResponse {
+        amount: available_cap,
+        unlimited: available_cap.is_none(),
+    })?)
+}
+
+pub fn query_claimable_token_of(deps: Deps, _env: Env, address: String) -> super::QueryResult {
+    let user_addr = deps.api.addr_canonicalize(address.as_str())?;
+    let user = User::load(deps.storage, &user_addr);
+
+    Ok(to_binary(&ClaimableTokenOfResponse {
+        amount: user.swapped_out,
+        remaining: user.swapped_out - user.swapped_out_claimed,
+    })?)
 }
