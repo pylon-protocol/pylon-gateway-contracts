@@ -1,5 +1,4 @@
-use cosmwasm_bignumber::Uint256;
-use cosmwasm_std::{to_binary, Deps, Env};
+use cosmwasm_std::{to_binary, Deps, Env, Uint128};
 use pylon_gateway::pool_resp;
 use pylon_utils::common::OrderBy;
 use schemars::JsonSchema;
@@ -47,12 +46,12 @@ pub fn query_claimable_reward(
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
 #[serde(rename_all = "snake_case")]
 pub enum CapStrategyQueryMsg {
-    AvailableCapOf { address: String, amount: Uint256 },
+    AvailableCapOf { address: String, amount: Uint128 },
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
 pub struct AvailableCapResponse {
-    pub amount: Option<Uint256>,
+    pub amount: Option<Uint128>,
     pub unlimited: bool,
 }
 
@@ -66,7 +65,7 @@ pub fn query_available_cap(deps: Deps, _env: Env, address: String) -> super::Que
             strategy.to_string(),
             &CapStrategyQueryMsg::AvailableCapOf {
                 address,
-                amount: Uint256::from(user.amount),
+                amount: user.amount,
             },
         )?;
         Ok(to_binary(&resp)?)
@@ -90,10 +89,25 @@ pub fn query_staker(deps: Deps, env: Env, address: String) -> super::QueryResult
         config.reward_distribution_time.finish,
     );
 
+    let available_cap = config.deposit_cap_strategy.as_ref().map(|x| {
+        let resp: AvailableCapResponse = deps
+            .querier
+            .query_wasm_smart(
+                x.to_string(),
+                &CapStrategyQueryMsg::AvailableCapOf {
+                    address: address.clone(),
+                    amount: user.amount,
+                },
+            )
+            .unwrap();
+        resp.amount
+    });
+
     let staker = pool_resp::StakerResponse {
         address,
         staked: user.amount,
         reward: calculate_rewards(&config, &reward, &user, &applicable_reward_time)?,
+        available_cap: available_cap.unwrap_or(None),
     };
 
     Ok(to_binary(&staker)?)
@@ -122,13 +136,30 @@ pub fn query_stakers(
         config.reward_distribution_time.finish,
     );
 
+    let api = deps.api;
     let stakers = users
         .iter()
         .map(|(address, user)| -> pool_resp::StakerResponse {
+            let address = api.addr_humanize(address).unwrap();
+            let available_cap = config.deposit_cap_strategy.as_ref().map(|x| {
+                let resp: AvailableCapResponse = deps
+                    .querier
+                    .query_wasm_smart(
+                        x.to_string(),
+                        &CapStrategyQueryMsg::AvailableCapOf {
+                            address: address.to_string(),
+                            amount: user.amount,
+                        },
+                    )
+                    .unwrap();
+                resp.amount
+            });
+
             pool_resp::StakerResponse {
-                address: deps.api.addr_humanize(address).unwrap().to_string(),
+                address: address.to_string(),
                 staked: user.amount,
                 reward: calculate_rewards(&config, &reward, user, &applicable_reward_time).unwrap(),
+                available_cap: available_cap.unwrap_or(None),
             }
         })
         .collect();

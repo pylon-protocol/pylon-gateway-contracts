@@ -22,6 +22,7 @@ fn success() {
                     address,
                     staked: Uint128::from(BALANCE),
                     reward: Default::default(),
+                    available_cap: None,
                 }),
                 _ => panic!("Unexpected staker address"),
             },

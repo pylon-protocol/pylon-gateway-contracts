@@ -24,11 +24,13 @@ fn success() {
                         address: TEST_SENDER.to_string(),
                         staked: Uint128::from(BALANCE_1),
                         reward: Default::default(),
+                        available_cap: None,
                     },
                     StakerResponse {
                         address: TEST_RECIPIENT.to_string(),
                         staked: Uint128::from(BALANCE_2),
                         reward: Default::default(),
+                        available_cap: None,
                     },
                 ],
             }),

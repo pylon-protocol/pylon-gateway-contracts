@@ -42,7 +42,8 @@ fn success() {
         StakerResponse {
             address: TEST_STAKER_1.to_string(),
             staked: staker1.amount,
-            reward: staker1.reward + staker1.amount
+            reward: staker1.reward + staker1.amount,
+            available_cap: None
         }
     );
 
@@ -61,7 +62,8 @@ fn success() {
             stakers: vec![StakerResponse {
                 address: TEST_STAKER_2.to_string(),
                 staked: staker2.amount,
-                reward: staker2.reward + staker2.amount * Uint128::from(2u128)
+                reward: staker2.reward + staker2.amount * Uint128::from(2u128),
+                available_cap: None
             }]
         }
     )

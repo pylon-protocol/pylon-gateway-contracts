@@ -58,6 +58,7 @@ pub struct StakerResponse {
     pub address: String,
     pub staked: Uint128,
     pub reward: Uint128,
+    pub available_cap: Option<Uint128>,
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
