@@ -86,7 +86,7 @@ async function deploySource(wallet: Wallet, path: string) {
 
 async function deployDirectory(wallet: Wallet) {
   const fileNames = fs.readdirSync(directory).filter((v) => extOf(v) == "wasm");
-  let { sequence } = await wallet.lcd.auth.accountInfo(wallet.key.accAddress);
+  let { account_number, sequence } = await wallet.lcd.auth.accountInfo(wallet.key.accAddress);
   const codeIds: { [contract: string]: string } = {};
   for (const fileName of fileNames) {
     console.log(`reading ${fileName}`);
@@ -98,7 +98,8 @@ async function deployDirectory(wallet: Wallet) {
         msgs: [
           new MsgStoreCode(wallet.key.accAddress, file.toString("base64")),
         ],
-        sequence: sequence,
+        sequence,
+        account_number,
       });
       sequence += 1;
 
